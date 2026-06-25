@@ -133,7 +133,7 @@ function GuideModal({ onClose }) {
 }
 
 // ── Donut chart (with drag handles + labels) ──────────
-const PIE_CX = 130, PIE_CY = 130, PIE_R = 92, PIE_IR = 50;
+const PIE_CX = 130, PIE_CY = 130, PIE_R = 78, PIE_IR = 42;
 
 function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
   const [hov, setHov] = useState(null);
