@@ -315,7 +315,6 @@ export default function MMPlanner() {
   const [showGuide,    setShowGuide]    = useState(false);
   const [editMm,       setEditMm]       = useState(null);
   const [hoveredTaskId, setHoveredTaskId] = useState(null);
-  const [copied, setCopied] = useState(null); // 'name' | 'mm' | null
 
   useEffect(() => {
     try {
@@ -366,17 +365,6 @@ export default function MMPlanner() {
   function removeTask(id)    { setTasks(p => p.filter(t => t.id !== id)); }
   function updateName(id, v) { setTasks(p => p.map(t => t.id === id ? { ...t, name: v } : t)); }
   function toggleLock(id)    { setTasks(p => p.map(t => t.id === id ? { ...t, locked: !t.locked } : t)); }
-
-  function copyToClipboard(type) {
-    const active = tasks.filter(t => t.weight > 0);
-    const text = type === 'name'
-      ? active.map(t => t.name || '').join('\n')
-      : active.map(t => (mmDisplay[t.id] ?? mm(t.weight)).toFixed(2)).join('\n');
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(type);
-      setTimeout(() => setCopied(null), 1800);
-    });
-  }
 
   function equalizeAll() {
     setTasks(p => {
@@ -660,20 +648,6 @@ export default function MMPlanner() {
                     </Tooltip>
                   </div>
                 </div>
-                {activeTasks.length > 0 && (
-                  <div className="copy-row">
-                    <Tooltip text="활성 업무 이름을 줄바꿈으로 복사" dir="down" align="start">
-                      <button className={`copy-btn${copied === 'name' ? ' copied' : ''}`} onClick={() => copyToClipboard('name')}>
-                        {copied === 'name' ? '✓ 복사됨' : '업무 목록 복사'}
-                      </button>
-                    </Tooltip>
-                    <Tooltip text="활성 업무 MM 값을 줄바꿈으로 복사" dir="down" align="start">
-                      <button className={`copy-btn${copied === 'mm' ? ' copied' : ''}`} onClick={() => copyToClipboard('mm')}>
-                        {copied === 'mm' ? '✓ 복사됨' : 'MM 복사'}
-                      </button>
-                    </Tooltip>
-                  </div>
-                )}
 
                 {tasks.map((task, i) => {
                   const ratio    = mm(task.weight);
