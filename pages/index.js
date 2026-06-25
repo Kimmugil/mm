@@ -41,10 +41,10 @@ function getWorkingDays(ym) {
   }
   return n;
 }
+function f(n) { return n.toFixed(2); }
+function trunc(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 
-// ── Tooltip ───────────────────────────────────────────
-// dir: 'up' | 'down' | 'left' | 'right'  (where the box appears relative to trigger)
-// align: 'center' | 'start' | 'end'
+// ── Tooltip (CSS attr trick) ──────────────────────────
 function Tooltip({ text, children, dir = 'up', align = 'center' }) {
   return (
     <span className={`tt tt--${dir} tt--${align}`} data-tip={text}>
@@ -60,30 +60,116 @@ function Help({ text, dir = 'up', align = 'center' }) {
   );
 }
 
-// ── Donut chart ───────────────────────────────────────
-function DonutChart({ tasks, totalWeight }) {
-  const [hov, setHov] = useState(null);
-  const CX = 130, CY = 130, R = 115, IR = 65;
-  let angle = -Math.PI / 2;
+// ── Guide modal ───────────────────────────────────────
+function GuideModal({ onClose }) {
+  useEffect(() => {
+    const onKey = e => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
-  const slices = tasks.map((task, i) => {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>MM Planner 사용법</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          <section>
+            <h3>MM이란?</h3>
+            <p>
+              MM(Man-Month)은 한 사람이 <strong>한 달 동안 수행할 수 있는 업무량을 1</strong>로 표현한 단위입니다.
+              여러 업무를 동시에 진행할 때, 각 업무에 투입한 비중을 비율로 나타내며 총합이 1.00 MM이 됩니다.
+            </p>
+            <p className="guide-note">
+              ※ 일수 기준 수치는 참고용입니다. 업무 난이도·집중도를 고려해 직접 조정하세요.
+            </p>
+          </section>
+
+          <section>
+            <h3>① 기준 월 설정</h3>
+            <p>우측 상단에서 기준 월을 선택하면 해당 달의 <strong>업무일수(평일)</strong>와 1일·1시간·1주 기준 MM이 자동으로 계산됩니다.</p>
+            <p className="guide-note">※ 공휴일은 자동으로 제외되지 않으니 직접 확인 후 조정하세요.</p>
+          </section>
+
+          <section>
+            <h3>② 업무 추가 · 편집</h3>
+            <p>하단 <strong>+ 업무 추가</strong> 버튼으로 항목을 추가하고, 이름 영역을 클릭하면 바로 수정할 수 있습니다. × 버튼으로 삭제합니다.</p>
+          </section>
+
+          <section>
+            <h3>③ 비율 조정 방법</h3>
+            <div className="guide-row">
+              <div className="guide-card">
+                <strong>막대 차트</strong>
+                <span>구분선을 <em>위아래</em>로 드래그</span>
+              </div>
+              <div className="guide-card">
+                <strong>원형 차트</strong>
+                <span>흰색 핸들 점을 드래그해 경계 이동</span>
+              </div>
+              <div className="guide-card">
+                <strong>균등 배분</strong>
+                <span>모든 항목을 동일 비율로 초기화</span>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h3>④ 일수 입력 모드</h3>
+            <p><strong>일수 입력</strong> 버튼을 누르면 각 업무의 소요 일수를 직접 입력할 수 있습니다. 해당 달 업무일수 기준으로 MM을 계산해 미리 보여주며, <strong>일수 기준 적용</strong> 버튼으로 차트에 반영합니다.</p>
+            <p className="guide-note">※ 입력 합계가 업무일수를 초과해도 비율만 반영되며 총합은 1.00 MM으로 유지됩니다.</p>
+          </section>
+
+          <section>
+            <h3>⑤ 자동 저장</h3>
+            <p>입력한 업무와 MM 비율은 <strong>이 브라우저에 자동으로 저장</strong>됩니다. 다음에 열어도 그대로 유지됩니다. (다른 기기·브라우저와는 공유되지 않습니다)</p>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Donut chart (with drag handles + labels) ──────────
+const PIE_CX = 130, PIE_CY = 130, PIE_R = 92, PIE_IR = 50;
+
+function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
+  const [hov, setHov] = useState(null);
+  const svgRef = useRef(null);
+
+  let angle = -Math.PI / 2;
+  const slices = [];
+  const handles = [];
+
+  tasks.forEach((task, i) => {
     const ratio = totalWeight > 0 ? task.weight / totalWeight : 1 / tasks.length;
-    const sweep = ratio * Math.PI * 2;
+    const sweep  = ratio * Math.PI * 2;
     const a0 = angle, a1 = angle + sweep;
+    const midA = angle + sweep / 2;
     angle = a1;
+
     const lg = sweep > Math.PI ? 1 : 0;
-    const p = (a, r) => [CX + r * Math.cos(a), CY + r * Math.sin(a)];
-    const [x1, y1] = p(a0, R), [x2, y2] = p(a1, R);
-    const [xi1, yi1] = p(a0, IR), [xi2, yi2] = p(a1, IR);
-    const d = `M${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${lg} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${xi2.toFixed(2)} ${yi2.toFixed(2)} A${IR} ${IR} 0 ${lg} 0 ${xi1.toFixed(2)} ${yi1.toFixed(2)}Z`;
-    return { id: task.id, d, color: PALETTE[i % PALETTE.length], ratio, name: task.name || `항목 ${i + 1}` };
+    const pt = (a, r) => [PIE_CX + r * Math.cos(a), PIE_CY + r * Math.sin(a)];
+    const [x1, y1] = pt(a0, PIE_R), [x2, y2] = pt(a1, PIE_R);
+    const [xi1, yi1] = pt(a0, PIE_IR), [xi2, yi2] = pt(a1, PIE_IR);
+    const d = `M${f(x1)} ${f(y1)} A${PIE_R} ${PIE_R} 0 ${lg} 1 ${f(x2)} ${f(y2)} L${f(xi2)} ${f(yi2)} A${PIE_IR} ${PIE_IR} 0 ${lg} 0 ${f(xi1)} ${f(yi1)}Z`;
+
+    slices.push({ id: task.id, d, color: PALETTE[i % PALETTE.length], ratio, name: task.name || `항목 ${i + 1}`, midA });
+
+    if (i < tasks.length - 1) {
+      const [hx, hy] = pt(a1, PIE_R);
+      handles.push({ idx: i, hx, hy, angle: a1 });
+    }
   });
 
   const hs = hov != null ? slices.find(s => s.id === hov) : null;
+  const MID_R = (PIE_R + PIE_IR) / 2;
 
   return (
     <div className="pie-wrap">
-      <svg viewBox="0 0 260 260" className="pie-svg">
+      <svg ref={svgRef} viewBox="0 0 260 260" className="pie-svg">
         {slices.map(s => (
           <path
             key={s.id} d={s.d} fill={s.color} stroke="#fff" strokeWidth="1.5"
@@ -92,19 +178,57 @@ function DonutChart({ tasks, totalWeight }) {
             onMouseLeave={() => setHov(null)}
           />
         ))}
-        <circle cx={CX} cy={CY} r={IR - 1} fill="white" />
+
+        <circle cx={PIE_CX} cy={PIE_CY} r={PIE_IR - 1} fill="white" />
+
+        {/* Segment labels inside ring */}
+        {slices.map(s => {
+          const lx = PIE_CX + MID_R * Math.cos(s.midA);
+          const ly = PIE_CY + MID_R * Math.sin(s.midA);
+          const showName = s.ratio > 0.13;
+          const showMM   = s.ratio > 0.06;
+          if (!showMM) return null;
+          return (
+            <g key={s.id + '-lbl'} style={{ pointerEvents: 'none' }}>
+              {showName && (
+                <text x={f(lx)} y={f(ly - 7)} textAnchor="middle" fontSize="9" fontWeight="600"
+                  fill="rgba(255,255,255,.9)" dominantBaseline="middle">
+                  {trunc(s.name, 6)}
+                </text>
+              )}
+              <text x={f(lx)} y={f(showName ? ly + 5 : ly)} textAnchor="middle" fontSize="11" fontWeight="700"
+                fill="rgba(255,255,255,.97)" dominantBaseline="middle">
+                {s.ratio.toFixed(2)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Center text */}
         {hs ? (
           <>
-            <text x={CX} y={CY - 8} textAnchor="middle" fontSize="19" fontWeight="700" fill="#1a1d23">{hs.ratio.toFixed(2)}</text>
-            <text x={CX} y={CY + 13} textAnchor="middle" fontSize="11.5" fill="#7a8494">{hs.name.length > 10 ? hs.name.slice(0, 9) + '…' : hs.name}</text>
+            <text x={PIE_CX} y={PIE_CY - 8} textAnchor="middle" fontSize="18" fontWeight="700" fill="#1a1d23">{hs.ratio.toFixed(2)}</text>
+            <text x={PIE_CX} y={PIE_CY + 11} textAnchor="middle" fontSize="10.5" fill="#7a8494">{trunc(hs.name, 10)}</text>
           </>
         ) : (
           <>
-            <text x={CX} y={CY - 8} textAnchor="middle" fontSize="22" fontWeight="700" fill="#1a1d23">1.00</text>
-            <text x={CX} y={CY + 13} textAnchor="middle" fontSize="12" fill="#7a8494">MM</text>
+            <text x={PIE_CX} y={PIE_CY - 8} textAnchor="middle" fontSize="20" fontWeight="700" fill="#1a1d23">1.00</text>
+            <text x={PIE_CX} y={PIE_CY + 11} textAnchor="middle" fontSize="11" fill="#7a8494">MM</text>
           </>
         )}
+
+        {/* Drag handles */}
+        {tasks.length > 1 && handles.map(h => (
+          <circle
+            key={`h-${h.idx}`}
+            cx={f(h.hx)} cy={f(h.hy)} r="7"
+            fill="white" stroke="#c0c8d8" strokeWidth="2"
+            style={{ cursor: 'grab', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,.18))' }}
+            onMouseDown={e => onBoundaryDrag(e, h.idx, svgRef)}
+          />
+        ))}
       </svg>
+
       <div className="pie-info-row" style={{ visibility: hs ? 'visible' : 'hidden' }}>
         {hs && <>
           <span className="color-dot" style={{ backgroundColor: hs.color }} />
@@ -124,8 +248,8 @@ function VertBar({ tasks, totalWeight, onDragStart }) {
   return (
     <div className="vbar-track" ref={trackRef}>
       {tasks.map((task, i) => {
-        const ratio = totalWeight > 0 ? task.weight / totalWeight : 1 / tasks.length;
-        const pct   = ratio * 100;
+        const ratio  = totalWeight > 0 ? task.weight / totalWeight : 1 / tasks.length;
+        const pct    = ratio * 100;
         const isLast = i === tasks.length - 1;
         const color  = PALETTE[i % PALETTE.length];
         const label  = task.name || `항목 ${i + 1}`;
@@ -162,6 +286,7 @@ export default function MMPlanner() {
   const [chartType,  setChartType]  = useState('bar');
   const [isDragging, setIsDragging] = useState(false);
   const [daysMode,   setDaysMode]   = useState(false);
+  const [showGuide,  setShowGuide]  = useState(false);
 
   useEffect(() => {
     try {
@@ -205,6 +330,7 @@ export default function MMPlanner() {
     }));
   }
 
+  // Vertical bar drag
   const handleVDrag = useCallback((e, idx, trackRef) => {
     e.preventDefault();
     const rect   = trackRef.current.getBoundingClientRect();
@@ -213,7 +339,6 @@ export default function MMPlanner() {
     const total  = sw.reduce((s, w) => s + w, 0);
     const minW   = total * MIN_RATIO;
     setIsDragging(true);
-
     const onMove = ev => {
       const dw   = ((ev.clientY - startY) / rect.height) * total;
       const pair = sw[idx] + sw[idx + 1];
@@ -221,6 +346,49 @@ export default function MMPlanner() {
       setTasks(p => p.map((t, i) => {
         if (i === idx)     return { ...t, weight: w0,        days: '' };
         if (i === idx + 1) return { ...t, weight: pair - w0, days: '' };
+        return t;
+      }));
+    };
+    const onUp = () => {
+      setIsDragging(false);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup',   onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup',   onUp);
+  }, [tasks]);
+
+  // Pie boundary drag
+  const handlePieDrag = useCallback((e, boundaryIdx, svgRef) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const svg     = svgRef.current;
+    const svgRect = svg.getBoundingClientRect();
+    const scaleX  = 260 / svgRect.width;
+    const scaleY  = 260 / svgRect.height;
+
+    const getAngle = (cx, cy) => {
+      const x = (cx - svgRect.left) * scaleX - PIE_CX;
+      const y = (cy - svgRect.top)  * scaleY - PIE_CY;
+      return Math.atan2(y, x);
+    };
+
+    const startAngle  = getAngle(e.clientX, e.clientY);
+    const sw          = tasks.map(t => t.weight);
+    const total       = sw.reduce((s, w) => s + w, 0);
+    const minW        = total * MIN_RATIO;
+    const pairTotal   = sw[boundaryIdx] + sw[boundaryIdx + 1];
+    setIsDragging(true);
+
+    const onMove = ev => {
+      let dAngle = getAngle(ev.clientX, ev.clientY) - startAngle;
+      if (dAngle >  Math.PI) dAngle -= 2 * Math.PI;
+      if (dAngle < -Math.PI) dAngle += 2 * Math.PI;
+      const dW = (dAngle / (2 * Math.PI)) * total;
+      const w0 = clamp(sw[boundaryIdx] + dW, minW, pairTotal - minW);
+      setTasks(p => p.map((t, i) => {
+        if (i === boundaryIdx)     return { ...t, weight: w0,            days: '' };
+        if (i === boundaryIdx + 1) return { ...t, weight: pairTotal - w0, days: '' };
         return t;
       }));
     };
@@ -246,7 +414,9 @@ export default function MMPlanner() {
         <link rel="icon" href="/icon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <style>{`body{cursor:${isDragging ? 'row-resize' : 'default'}}`}</style>
+      <style>{`body{cursor:${isDragging ? (chartType === 'pie' ? 'grabbing' : 'row-resize') : 'default'}}`}</style>
+
+      {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
 
       <div className="page">
 
@@ -257,9 +427,12 @@ export default function MMPlanner() {
               <h1>MM Planner</h1>
               <p className="header-sub">업무별 월간 공수(MM) 배분 도구 · 총합 1.00 MM</p>
             </div>
-            <div className="month-picker">
-              <label>기준 월</label>
-              <input type="month" value={month} onChange={e => setMonth(e.target.value)} />
+            <div className="header-right">
+              <button className="guide-btn" onClick={() => setShowGuide(true)}>사용법</button>
+              <div className="month-picker">
+                <label>기준 월</label>
+                <input type="month" value={month} onChange={e => setMonth(e.target.value)} />
+              </div>
             </div>
           </div>
 
@@ -278,14 +451,13 @@ export default function MMPlanner() {
                 <span className="wd-pill">1주(5일) <strong>{(dayMM * 5).toFixed(4)} MM</strong></span>
               </Tooltip>
               <Help
-                text={`위 수치는 ${formatMonth(month)} 평일 기준 참고값입니다.\n실제 배분은 업무 비중·난이도를 고려해 직접 조정하세요.\n일수 비율로 1.00 MM을 나눠 갖는 구조입니다.`}
+                text={`위 수치는 ${formatMonth(month)} 평일 기준 참고값입니다.\n업무 난이도·집중도를 고려해 직접 조정하세요.`}
                 dir="down" align="end"
               />
             </div>
           )}
         </div>
 
-        {/* ── Main 2-col grid ── */}
         {tasks.length === 0 ? (
           <div className="empty">
             <div className="empty-icon">≡</div>
@@ -298,12 +470,18 @@ export default function MMPlanner() {
             {/* Left: Chart */}
             <div className="chart-panel">
               <div className="chart-toggle-row">
-                <Tooltip text="세로 막대 차트\n구분선을 드래그해 비율 조정" dir="down">
-                  <button className={`chart-tab${chartType === 'bar' ? ' active' : ''}`} onClick={() => setChartType('bar')}>막대</button>
-                </Tooltip>
-                <Tooltip text="원형 도넛 차트\n각 항목에 마우스를 올리면 수치 확인" dir="down">
-                  <button className={`chart-tab${chartType === 'pie' ? ' active' : ''}`} onClick={() => setChartType('pie')}>원형</button>
-                </Tooltip>
+                <button
+                  className={`chart-tab${chartType === 'bar' ? ' active' : ''}`}
+                  onClick={() => setChartType('bar')}
+                >
+                  <span className="chart-tab-icon">▬</span> 막대
+                </button>
+                <button
+                  className={`chart-tab${chartType === 'pie' ? ' active' : ''}`}
+                  onClick={() => setChartType('pie')}
+                >
+                  <span className="chart-tab-icon">◎</span> 원형
+                </button>
               </div>
 
               {chartType === 'bar' ? (
@@ -312,7 +490,10 @@ export default function MMPlanner() {
                   {tasks.length > 1 && <p className="chart-hint">↕ 구분선을 드래그해 비율 조정</p>}
                 </>
               ) : (
-                <DonutChart tasks={tasks} totalWeight={totalWeight} />
+                <>
+                  <DonutChart tasks={tasks} totalWeight={totalWeight} onBoundaryDrag={handlePieDrag} />
+                  {tasks.length > 1 && <p className="chart-hint">● 흰 점을 드래그해 비율 조정</p>}
+                </>
               )}
             </div>
 
@@ -322,13 +503,13 @@ export default function MMPlanner() {
                 <div className="card-header">
                   <span>
                     업무 목록
-                    <Help text="항목 이름 클릭해 편집\n× 버튼으로 삭제" dir="down" align="start" />
+                    <Help text="이름 클릭해 편집 · × 버튼으로 삭제" dir="down" align="start" />
                   </span>
                   <div className="card-header-right">
                     <Tooltip text="모든 항목을 동일 비율로 초기화" dir="down" align="end">
                       <button className="equalize-btn" onClick={equalizeAll}>균등 배분</button>
                     </Tooltip>
-                    <Tooltip text="소요 일수 입력 → MM 자동 계산\n'적용' 버튼으로 차트에 반영" dir="down" align="end">
+                    <Tooltip text="일수 입력 → MM 자동 계산\n'적용' 버튼으로 차트에 반영" dir="down" align="end">
                       <button className={`mode-btn${daysMode ? ' active' : ''}`} onClick={() => setDaysMode(v => !v)}>일수 입력</button>
                     </Tooltip>
                   </div>
@@ -340,10 +521,7 @@ export default function MMPlanner() {
                       {formatMonth(month)} 업무일 <strong>{workingDays}일</strong>
                       &nbsp;·&nbsp;1일 = <strong>{dayMM.toFixed(4)} MM</strong>
                     </span>
-                    <Help
-                      text={`일수 입력 시 ${workingDays}일 기준으로 MM 계산\n합계가 ${workingDays}일 초과해도 비율만 반영, 총합은 1.00 유지`}
-                      dir="up" align="end"
-                    />
+                    <Help text={`일수 입력 시 ${workingDays}일 기준으로 MM 계산\n초과해도 비율만 반영, 총합 1.00 유지`} dir="up" align="end" />
                   </div>
                 )}
 
@@ -398,9 +576,7 @@ export default function MMPlanner() {
                       입력 합계 <strong>{totalDays}</strong>일 / {workingDays}일
                       {overBudget && <span className="days-over"> 초과</span>}
                     </span>
-                    <span className="days-sum-mm">
-                      기준 MM 합: <strong>{(totalDays / workingDays).toFixed(4)}</strong>
-                    </span>
+                    <span className="days-sum-mm">기준 MM 합: <strong>{(totalDays / workingDays).toFixed(4)}</strong></span>
                   </div>
                 )}
               </div>
@@ -411,9 +587,7 @@ export default function MMPlanner() {
                   {daysMode && hasDays && (
                     <button className="apply-btn" onClick={applyDays}>일수 기준 적용 →</button>
                   )}
-                  <div className="total-badge">
-                    합계 <strong>{tasks.length > 0 ? '1.00' : '0.00'}</strong> MM
-                  </div>
+                  <div className="total-badge">합계 <strong>{tasks.length > 0 ? '1.00' : '0.00'}</strong> MM</div>
                 </div>
               </div>
             </div>
