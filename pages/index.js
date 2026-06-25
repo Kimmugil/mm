@@ -491,7 +491,7 @@ export default function MMPlanner() {
   if (!ready) return null;
 
   const lockedCount = tasks.filter(t => t.locked).length;
-  const chartTasks  = activeTasks;
+  const chartTasks  = [...activeTasks].sort((a, b) => (a.locked ? 1 : 0) - (b.locked ? 1 : 0));
 
   return (
     <>
