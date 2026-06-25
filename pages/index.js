@@ -287,6 +287,7 @@ export default function MMPlanner() {
   const [isDragging, setIsDragging] = useState(false);
   const [daysMode,   setDaysMode]   = useState(false);
   const [showGuide,  setShowGuide]  = useState(false);
+  const [editMm,     setEditMm]     = useState(null); // { id, val }
 
   useEffect(() => {
     try {
@@ -323,6 +324,20 @@ export default function MMPlanner() {
       t.id === id ? { ...t, days: val, weight: !isNaN(n) && n > 0 ? n : t.weight } : t
     ));
   }
+  function startEditMm(id, ratio) {
+    setEditMm({ id, val: ratio.toFixed(2) });
+  }
+  function commitEditMm(id) {
+    if (!editMm) return;
+    const v = parseFloat(editMm.val);
+    if (!isNaN(v) && v > 0 && v < 1) {
+      const rest = tasks.filter(t => t.id !== id).reduce((s, t) => s + t.weight, 0);
+      const newW = rest > 0 ? (v * rest) / (1 - v) : v;
+      setTasks(p => p.map(t => t.id === id ? { ...t, weight: Math.max(newW, 0.001), days: '' } : t));
+    }
+    setEditMm(null);
+  }
+
   function applyDays() {
     setTasks(p => p.map(t => {
       const n = parseFloat(t.days);
@@ -554,9 +569,27 @@ export default function MMPlanner() {
                           <span className="days-unit">일</span>
                           {dayPv != null && <span className="days-preview">= {dayPv.toFixed(2)} MM</span>}
                         </div>
+                      ) : editMm?.id === task.id ? (
+                        <input
+                          type="number"
+                          className="mm-direct-input"
+                          value={editMm.val}
+                          min="0.01" max="0.99" step="0.01"
+                          autoFocus
+                          onChange={e => setEditMm({ id: task.id, val: e.target.value })}
+                          onBlur={() => commitEditMm(task.id)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') commitEditMm(task.id);
+                            if (e.key === 'Escape') setEditMm(null);
+                          }}
+                        />
                       ) : (
                         <>
-                          <div className="task-stats">
+                          <div
+                            className="task-stats"
+                            onClick={() => startEditMm(task.id, ratio)}
+                            title="클릭해서 MM 직접 입력"
+                          >
                             <span className="task-mm">{ratio.toFixed(2)}</span>
                             <span className="task-pct">{pct.toFixed(1)}%</span>
                           </div>
