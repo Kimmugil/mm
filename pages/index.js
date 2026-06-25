@@ -352,6 +352,25 @@ export default function MMPlanner() {
     });
   }
 
+  // Enter days tab: pre-fill days from current MM ratio × workingDays
+  function enterDaysMode() {
+    if (workingDays > 0) {
+      const total = tasks.reduce((s, t) => s + t.weight, 0);
+      setTasks(p => p.map(t => {
+        if (t.locked) return t;
+        const ratio = total > 0 ? t.weight / total : 1 / p.length;
+        const filled = (ratio * workingDays).toFixed(1);
+        return { ...t, days: filled, weight: parseFloat(filled) };
+      }));
+    }
+    setDaysMode(true);
+  }
+
+  // Exit days tab: weights already synced via updateDays, just switch mode
+  function exitDaysMode() {
+    setDaysMode(false);
+  }
+
   function updateDays(id, val) {
     const n = parseFloat(val);
     setTasks(p => p.map(t =>
@@ -576,23 +595,33 @@ export default function MMPlanner() {
                     업무 목록
                     <Help text="이름 클릭해 편집 · × 버튼으로 삭제 · 🔒 버튼으로 비율 고정" dir="down" align="start" />
                   </span>
-                  <div className="card-header-right">
-                    <Tooltip text={lockedCount > 0 ? `미고정 항목만 균등 배분\n고정 항목(${lockedCount}개)은 유지` : '모든 항목을 동일 비율로 초기화'} dir="down" align="end">
-                      <button className="equalize-btn" onClick={equalizeAll}>균등 배분</button>
-                    </Tooltip>
-                    <Tooltip text="일수 입력 → MM 자동 계산\n'적용' 버튼으로 차트에 반영" dir="down" align="end">
-                      <button className={`mode-btn${daysMode ? ' active' : ''}`} onClick={() => setDaysMode(v => !v)}>일수 입력</button>
-                    </Tooltip>
-                  </div>
+                  <Tooltip text={lockedCount > 0 ? `미고정 항목만 균등 배분\n고정 항목(${lockedCount}개)은 유지` : '모든 항목을 동일 비율로 초기화'} dir="down" align="end">
+                    <button className="equalize-btn" onClick={equalizeAll}>균등 배분</button>
+                  </Tooltip>
+                </div>
+
+                <div className="input-tab-row">
+                  <button
+                    className={`input-tab${!daysMode ? ' active' : ''}`}
+                    onClick={exitDaysMode}
+                  >
+                    MM 직접 입력
+                  </button>
+                  <button
+                    className={`input-tab${daysMode ? ' active' : ''}`}
+                    onClick={enterDaysMode}
+                    disabled={workingDays === 0}
+                    title={workingDays === 0 ? '기준 월을 먼저 선택해주세요' : ''}
+                  >
+                    일수로 입력
+                    {workingDays > 0 && <span className="input-tab-sub">{workingDays}일 기준</span>}
+                  </button>
                 </div>
 
                 {daysMode && workingDays > 0 && (
                   <div className="days-guide-bar">
-                    <span>
-                      {formatMonth(month)} 업무일 <strong>{workingDays}일</strong>
-                      &nbsp;·&nbsp;1일 = <strong>{dayMM.toFixed(4)} MM</strong>
-                    </span>
-                    <Help text={`일수 입력 시 ${workingDays}일 기준으로 MM 계산\n초과해도 비율만 반영, 총합 1.00 유지`} dir="up" align="end" />
+                    <span>1일 = <strong>{dayMM.toFixed(4)} MM</strong> · 입력한 일수가 차트에 실시간 반영됩니다</span>
+                    <Help text={`${workingDays}일 기준으로 MM 계산\n초과해도 비율만 반영, 총합 1.00 유지\n고정 항목은 변경되지 않습니다`} dir="up" align="end" />
                   </div>
                 )}
 
@@ -682,12 +711,7 @@ export default function MMPlanner() {
 
               <div className="task-footer">
                 <button className="add-btn" onClick={addTask}>+ 업무 추가</button>
-                <div className="footer-right">
-                  {daysMode && hasDays && (
-                    <button className="apply-btn" onClick={applyDays}>일수 기준 적용 →</button>
-                  )}
-                  <div className="total-badge">합계 <strong>{tasks.length > 0 ? '1.00' : '0.00'}</strong> MM</div>
-                </div>
+                <div className="total-badge">합계 <strong>{tasks.length > 0 ? '1.00' : '0.00'}</strong> MM</div>
               </div>
             </div>
           </div>
