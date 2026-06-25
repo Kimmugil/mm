@@ -307,7 +307,12 @@ export default function MMPlanner() {
       const raw = localStorage.getItem(STORAGE_KEY);
       const parsed = raw ? JSON.parse(raw) : null;
       const loaded = Array.isArray(parsed) && parsed.length
-        ? parsed.map((t, i) => ({ ...t, locked: t.locked ?? false, colorIdx: t.colorIdx ?? i }))
+        ? parsed.map((t, i) => ({
+            ...t,
+            locked: t.locked ?? false,
+            colorIdx: t.colorIdx ?? i,
+            name: /^업무 항목 \d+$/.test(t.name) ? '' : t.name,
+          }))
         : defaultTasks().map((t, i) => ({ ...t, colorIdx: i }));
       setTasks(loaded);
       setMonth(localStorage.getItem(MONTH_KEY) || currentYearMonth());
