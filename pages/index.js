@@ -492,7 +492,7 @@ export default function MMPlanner() {
               <img src="/LOGO_OG.png" alt="로고" className="header-logo" />
               <div>
                 <h1>너의MM은</h1>
-                <p className="header-sub">월간 공수(MM) 배분 도구 · 총합 1.00 MM</p>
+                <p className="header-sub">MM 배분 도우미 · 총합이 1.00 MM이 되도록 자동 계산됩니다.</p>
               </div>
             </div>
             <div className="header-right">
