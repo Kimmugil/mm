@@ -441,14 +441,14 @@ export default function MMPlanner() {
               <Tooltip text={`${formatMonth(month)}의 토·일 제외 평일 수\n공휴일은 자동 제외되지 않습니다`} dir="down" align="start">
                 <span className="wd-pill">업무일 <strong>{workingDays}일</strong></span>
               </Tooltip>
+              <Tooltip text={`1일 MM × 5 = ${(dayMM * 5).toFixed(4)}\n1주(5일) 기준 참고값`} dir="down" align="start">
+                <span className="wd-pill">1주(5일) <strong>{(dayMM * 5).toFixed(4)} MM</strong></span>
+              </Tooltip>
               <Tooltip text={`1 ÷ ${workingDays} = ${dayMM.toFixed(6)}\n하루 8시간 근무 기준 참고값`} dir="down" align="start">
                 <span className="wd-pill">1일 <strong>{dayMM.toFixed(4)} MM</strong></span>
               </Tooltip>
               <Tooltip text={`${dayMM.toFixed(6)} ÷ 8 = ${hourMM.toFixed(6)}\n1시간 단위 참고값`} dir="down" align="start">
                 <span className="wd-pill">1시간 <strong>{hourMM.toFixed(5)} MM</strong></span>
-              </Tooltip>
-              <Tooltip text={`1일 MM × 5 = ${(dayMM * 5).toFixed(4)}\n1주(5일) 기준 참고값`} dir="down" align="start">
-                <span className="wd-pill">1주(5일) <strong>{(dayMM * 5).toFixed(4)} MM</strong></span>
               </Tooltip>
               <Help
                 text={`위 수치는 ${formatMonth(month)} 평일 기준 참고값입니다.\n업무 난이도·집중도를 고려해 직접 조정하세요.`}
