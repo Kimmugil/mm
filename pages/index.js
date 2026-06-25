@@ -239,9 +239,9 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
         {tasks.length > 1 && handles.map(h => h.isLocked ? null : (
           <circle
             key={`h-${h.idx}`}
-            cx={f(h.hx)} cy={f(h.hy)} r="7"
-            fill="white" stroke="#c0c8d8" strokeWidth="2"
-            style={{ cursor: 'grab', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,.18))' }}
+            cx={f(h.hx)} cy={f(h.hy)} r="4"
+            fill="white" stroke="#b0b8cc" strokeWidth="1.5"
+            style={{ cursor: 'grab', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,.15))' }}
             onMouseDown={e => onBoundaryDrag(e, h.idx, svgRef)}
           />
         ))}
