@@ -486,6 +486,34 @@ body {
 }
 .task-mini-fill { height: 100%; border-radius: 2px; transition: width .12s; }
 
+.lock-btn {
+  width: 26px; height: 26px;
+  border: none; background: none;
+  cursor: pointer;
+  font-size: 13px; line-height: 1;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.3;
+  transition: opacity .15s, background .15s;
+  padding: 0;
+}
+.lock-btn:hover   { opacity: 0.8; background: var(--bg); }
+.lock-btn.locked  { opacity: 1; background: var(--accent-bg); }
+
+.task-row.locked { background: #fafafe; }
+.task-row.locked .task-mm  { color: var(--accent); }
+.task-row.locked .task-name-input { color: var(--muted); }
+
+.lock-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
 .remove-btn {
   width: 24px; height: 24px;
   border: none; background: none;

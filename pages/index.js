@@ -16,8 +16,8 @@ let _uid = Date.now();
 function uid() { return ++_uid; }
 function defaultTasks() {
   return [
-    { id: uid(), name: '업무 항목 1', weight: 1, days: '' },
-    { id: uid(), name: '업무 항목 2', weight: 1, days: '' },
+    { id: uid(), name: '업무 항목 1', weight: 1, days: '', locked: false },
+    { id: uid(), name: '업무 항목 2', weight: 1, days: '', locked: false },
   ];
 }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -111,19 +111,30 @@ function GuideModal({ onClose }) {
               </div>
               <div className="guide-card">
                 <strong>균등 배분</strong>
-                <span>모든 항목을 동일 비율로 초기화</span>
+                <span>미고정 항목을 동일 비율로 초기화</span>
               </div>
             </div>
           </section>
 
           <section>
-            <h3>④ 일수 입력 모드</h3>
-            <p><strong>일수 입력</strong> 버튼을 누르면 각 업무의 소요 일수를 직접 입력할 수 있습니다. 해당 달 업무일수 기준으로 MM을 계산해 미리 보여주며, <strong>일수 기준 적용</strong> 버튼으로 차트에 반영합니다.</p>
-            <p className="guide-note">※ 입력 합계가 업무일수를 초과해도 비율만 반영되며 총합은 1.00 MM으로 유지됩니다.</p>
+            <h3>④ MM 직접 입력</h3>
+            <p>각 업무의 MM 숫자를 클릭하면 직접 입력할 수 있습니다. <strong>Enter</strong> 또는 클릭 이탈로 확정하면 나머지 미고정 업무들이 비율을 유지하며 자동 재조정됩니다.</p>
           </section>
 
           <section>
-            <h3>⑤ 자동 저장</h3>
+            <h3>⑤ 고정 기능</h3>
+            <p>각 업무 행의 <strong>🔒 버튼</strong>을 클릭하면 해당 업무의 MM 비율이 고정됩니다. 고정된 항목은 드래그·균등 배분·일수 적용 등 다른 조작에 의해 변경되지 않습니다.</p>
+            <p className="guide-note">※ 고정 항목도 MM 숫자를 직접 클릭해 변경할 수 있습니다.</p>
+          </section>
+
+          <section>
+            <h3>⑥ 일수 입력 모드</h3>
+            <p><strong>일수 입력</strong> 버튼을 누르면 각 업무의 소요 일수를 직접 입력할 수 있습니다. 해당 달 업무일수 기준으로 MM을 계산해 미리 보여주며, <strong>일수 기준 적용</strong> 버튼으로 차트에 반영합니다.</p>
+            <p className="guide-note">※ 고정 항목은 일수 적용 대상에서 제외됩니다.</p>
+          </section>
+
+          <section>
+            <h3>⑦ 자동 저장</h3>
             <p>입력한 업무와 MM 비율은 <strong>이 브라우저에 자동으로 저장</strong>됩니다. 다음에 열어도 그대로 유지됩니다. (다른 기기·브라우저와는 공유되지 않습니다)</p>
           </section>
         </div>
@@ -156,11 +167,12 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
     const [xi1, yi1] = pt(a0, PIE_IR), [xi2, yi2] = pt(a1, PIE_IR);
     const d = `M${f(x1)} ${f(y1)} A${PIE_R} ${PIE_R} 0 ${lg} 1 ${f(x2)} ${f(y2)} L${f(xi2)} ${f(yi2)} A${PIE_IR} ${PIE_IR} 0 ${lg} 0 ${f(xi1)} ${f(yi1)}Z`;
 
-    slices.push({ id: task.id, d, color: PALETTE[i % PALETTE.length], ratio, name: task.name || `항목 ${i + 1}`, midA });
+    slices.push({ id: task.id, d, color: PALETTE[i % PALETTE.length], ratio, name: task.name || `항목 ${i + 1}`, midA, locked: task.locked });
 
     if (i < tasks.length - 1) {
       const [hx, hy] = pt(a1, PIE_R);
-      handles.push({ idx: i, hx, hy, angle: a1 });
+      const isLocked = task.locked || tasks[i + 1]?.locked;
+      handles.push({ idx: i, hx, hy, angle: a1, isLocked });
     }
   });
 
@@ -173,7 +185,7 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
         {slices.map(s => (
           <path
             key={s.id} d={s.d} fill={s.color} stroke="#fff" strokeWidth="1.5"
-            style={{ opacity: hov == null || hov === s.id ? 1 : 0.45, cursor: 'default', transition: 'opacity .15s' }}
+            style={{ opacity: hov == null || hov === s.id ? (s.locked ? 0.65 : 1) : 0.45, cursor: 'default', transition: 'opacity .15s' }}
             onMouseEnter={() => setHov(s.id)}
             onMouseLeave={() => setHov(null)}
           />
@@ -200,6 +212,12 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
                 fill="rgba(255,255,255,.97)" dominantBaseline="middle">
                 {s.ratio.toFixed(2)}
               </text>
+              {s.locked && (
+                <text x={f(lx + 10)} y={f(showName ? ly - 10 : ly - 8)} textAnchor="middle" fontSize="8"
+                  fill="rgba(255,255,255,.8)" dominantBaseline="middle">
+                  🔒
+                </text>
+              )}
             </g>
           );
         })}
@@ -217,8 +235,8 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
           </>
         )}
 
-        {/* Drag handles */}
-        {tasks.length > 1 && handles.map(h => (
+        {/* Drag handles — hidden for locked boundaries */}
+        {tasks.length > 1 && handles.map(h => h.isLocked ? null : (
           <circle
             key={`h-${h.idx}`}
             cx={f(h.hx)} cy={f(h.hy)} r="7"
@@ -235,6 +253,7 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
           <span className="pie-name">{hs.name}</span>
           <strong>{hs.ratio.toFixed(2)} MM</strong>
           <span className="muted">({(hs.ratio * 100).toFixed(1)}%)</span>
+          {hs.locked && <span className="lock-badge">고정됨</span>}
         </>}
         &nbsp;
       </div>
@@ -253,20 +272,22 @@ function VertBar({ tasks, totalWeight, onDragStart }) {
         const isLast = i === tasks.length - 1;
         const color  = PALETTE[i % PALETTE.length];
         const label  = task.name || `항목 ${i + 1}`;
+        const nextLocked = tasks[i + 1]?.locked;
+        const canDrag = !isLast && !task.locked && !nextLocked;
         return (
           <div
             key={task.id}
             className="vbar-seg"
-            style={{ height: `${pct}%`, backgroundColor: color }}
-            title={`${label}: ${ratio.toFixed(2)} MM (${pct.toFixed(1)}%)`}
+            style={{ height: `${pct}%`, backgroundColor: color, opacity: task.locked ? 0.75 : 1 }}
+            title={`${label}: ${ratio.toFixed(2)} MM (${pct.toFixed(1)}%)${task.locked ? ' [고정됨]' : ''}`}
           >
             {pct > 5 && (
               <span className="vbar-label">
-                {pct > 10 && <span className="vbar-name">{label}</span>}
+                {pct > 10 && <span className="vbar-name">{label}{task.locked ? ' 🔒' : ''}</span>}
                 <span className="vbar-mm">{ratio.toFixed(2)}</span>
               </span>
             )}
-            {!isLast && (
+            {canDrag && (
               <div className="vbar-handle" onMouseDown={e => onDragStart(e, i, trackRef)}>
                 <div className="vbar-grip" />
               </div>
@@ -293,7 +314,10 @@ export default function MMPlanner() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       const parsed = raw ? JSON.parse(raw) : null;
-      setTasks(Array.isArray(parsed) && parsed.length ? parsed : defaultTasks());
+      const loaded = Array.isArray(parsed) && parsed.length
+        ? parsed.map(t => ({ ...t, locked: t.locked ?? false }))
+        : defaultTasks();
+      setTasks(loaded);
       setMonth(localStorage.getItem(MONTH_KEY) || currentYearMonth());
       setChartType(localStorage.getItem(CHART_KEY) || 'pie');
     } catch {
@@ -313,10 +337,26 @@ export default function MMPlanner() {
   const totalWeight = tasks.reduce((s, t) => s + t.weight, 0);
   const mm = w => totalWeight > 0 ? w / totalWeight : 0;
 
-  function addTask()         { setTasks(p => [...p, { id: uid(), name: '', weight: 1, days: '' }]); }
+  function addTask()         { setTasks(p => [...p, { id: uid(), name: '', weight: 1, days: '', locked: false }]); }
   function removeTask(id)    { setTasks(p => p.filter(t => t.id !== id)); }
   function updateName(id, v) { setTasks(p => p.map(t => t.id === id ? { ...t, name: v } : t)); }
-  function equalizeAll()     { setTasks(p => p.map(t => ({ ...t, weight: 1, days: '' }))); }
+  function toggleLock(id)    { setTasks(p => p.map(t => t.id === id ? { ...t, locked: !t.locked } : t)); }
+
+  // Equalize only unlocked tasks; locked tasks keep their current ratio
+  function equalizeAll() {
+    setTasks(p => {
+      const total = p.reduce((s, t) => s + t.weight, 0);
+      if (total === 0) return p;
+      const lockedRatioSum = p.filter(t => t.locked).reduce((s, t) => s + t.weight / total, 0);
+      const unlockedCount  = p.filter(t => !t.locked).length;
+      if (unlockedCount === 0) return p;
+      const each = Math.max((1 - lockedRatioSum) / unlockedCount, 0.001);
+      return p.map(t => t.locked
+        ? { ...t, weight: t.weight / total }
+        : { ...t, weight: each, days: '' }
+      );
+    });
+  }
 
   function updateDays(id, val) {
     const n = parseFloat(val);
@@ -324,29 +364,49 @@ export default function MMPlanner() {
       t.id === id ? { ...t, days: val, weight: !isNaN(n) && n > 0 ? n : t.weight } : t
     ));
   }
+
   function startEditMm(id, ratio) {
     setEditMm({ id, val: ratio.toFixed(2) });
   }
+
+  // Commit direct MM edit, keeping locked tasks' ratios stable
   function commitEditMm(id) {
     if (!editMm) return;
     const v = parseFloat(editMm.val);
     if (!isNaN(v) && v > 0 && v < 1) {
-      const rest = tasks.filter(t => t.id !== id).reduce((s, t) => s + t.weight, 0);
-      const newW = rest > 0 ? (v * rest) / (1 - v) : v;
-      setTasks(p => p.map(t => t.id === id ? { ...t, weight: Math.max(newW, 0.001), days: '' } : t));
+      const total = tasks.reduce((s, t) => s + t.weight, 0);
+      const lockedRatioSum  = tasks.filter(t => t.locked && t.id !== id).reduce((s, t) => s + t.weight / total, 0);
+      const available       = 1 - v - lockedRatioSum;
+      const unlockedOthers  = tasks.filter(t => !t.locked && t.id !== id);
+      const unlockedOtherRatioSum = unlockedOthers.reduce((s, t) => s + t.weight / total, 0);
+
+      if (available >= 0) {
+        setTasks(p => p.map(t => {
+          if (t.id === id) return { ...t, weight: v, days: '' };
+          if (t.locked)    return { ...t, weight: t.weight / total };
+          const r = t.weight / total;
+          const newR = unlockedOtherRatioSum > 0
+            ? available * (r / unlockedOtherRatioSum)
+            : available / Math.max(unlockedOthers.length, 1);
+          return { ...t, weight: Math.max(newR, 0.001), days: '' };
+        }));
+      }
     }
     setEditMm(null);
   }
 
+  // Apply day inputs, skip locked tasks
   function applyDays() {
     setTasks(p => p.map(t => {
+      if (t.locked) return t;
       const n = parseFloat(t.days);
       return !isNaN(n) && n > 0 ? { ...t, weight: n } : t;
     }));
   }
 
-  // Vertical bar drag
+  // Vertical bar drag — skip if either adjacent task is locked
   const handleVDrag = useCallback((e, idx, trackRef) => {
+    if (tasks[idx]?.locked || tasks[idx + 1]?.locked) return;
     e.preventDefault();
     const rect   = trackRef.current.getBoundingClientRect();
     const startY = e.clientY;
@@ -373,8 +433,9 @@ export default function MMPlanner() {
     window.addEventListener('mouseup',   onUp);
   }, [tasks]);
 
-  // Pie boundary drag
+  // Pie boundary drag — skip if either adjacent task is locked
   const handlePieDrag = useCallback((e, boundaryIdx, svgRef) => {
+    if (tasks[boundaryIdx]?.locked || tasks[boundaryIdx + 1]?.locked) return;
     e.preventDefault();
     e.stopPropagation();
     const svg     = svgRef.current;
@@ -402,7 +463,7 @@ export default function MMPlanner() {
       const dW = (dAngle / (2 * Math.PI)) * total;
       const w0 = clamp(sw[boundaryIdx] + dW, minW, pairTotal - minW);
       setTasks(p => p.map((t, i) => {
-        if (i === boundaryIdx)     return { ...t, weight: w0,            days: '' };
+        if (i === boundaryIdx)     return { ...t, weight: w0,             days: '' };
         if (i === boundaryIdx + 1) return { ...t, weight: pairTotal - w0, days: '' };
         return t;
       }));
@@ -421,6 +482,7 @@ export default function MMPlanner() {
   const totalDays  = tasks.reduce((s, t) => { const n = parseFloat(t.days); return s + (isNaN(n) ? 0 : n); }, 0);
   const hasDays    = tasks.some(t => t.days !== '' && !isNaN(parseFloat(t.days)));
   const overBudget = workingDays > 0 && totalDays > workingDays;
+  const lockedCount = tasks.filter(t => t.locked).length;
 
   return (
     <>
@@ -502,12 +564,12 @@ export default function MMPlanner() {
               {chartType === 'bar' ? (
                 <>
                   <VertBar tasks={tasks} totalWeight={totalWeight} onDragStart={handleVDrag} />
-                  {tasks.length > 1 && <p className="chart-hint">↕ 구분선을 드래그해 비율 조정</p>}
+                  {tasks.length > 1 && <p className="chart-hint">↕ 구분선을 드래그해 비율 조정{lockedCount > 0 ? ' · 🔒 고정 항목은 드래그 제외' : ''}</p>}
                 </>
               ) : (
                 <>
                   <DonutChart tasks={tasks} totalWeight={totalWeight} onBoundaryDrag={handlePieDrag} />
-                  {tasks.length > 1 && <p className="chart-hint">● 흰 점을 드래그해 비율 조정</p>}
+                  {tasks.length > 1 && <p className="chart-hint">● 흰 점을 드래그해 비율 조정{lockedCount > 0 ? ' · 🔒 고정 항목은 드래그 제외' : ''}</p>}
                 </>
               )}
             </div>
@@ -518,10 +580,10 @@ export default function MMPlanner() {
                 <div className="card-header">
                   <span>
                     업무 목록
-                    <Help text="이름 클릭해 편집 · × 버튼으로 삭제" dir="down" align="start" />
+                    <Help text="이름 클릭해 편집 · × 버튼으로 삭제 · 🔒 버튼으로 비율 고정" dir="down" align="start" />
                   </span>
                   <div className="card-header-right">
-                    <Tooltip text="모든 항목을 동일 비율로 초기화" dir="down" align="end">
+                    <Tooltip text={lockedCount > 0 ? `미고정 항목만 균등 배분\n고정 항목(${lockedCount}개)은 유지` : '모든 항목을 동일 비율로 초기화'} dir="down" align="end">
                       <button className="equalize-btn" onClick={equalizeAll}>균등 배분</button>
                     </Tooltip>
                     <Tooltip text="일수 입력 → MM 자동 계산\n'적용' 버튼으로 차트에 반영" dir="down" align="end">
@@ -547,7 +609,7 @@ export default function MMPlanner() {
                   const dayPv = (!isNaN(dn) && dn > 0 && workingDays > 0) ? dn / workingDays : null;
 
                   return (
-                    <div key={task.id} className="task-row">
+                    <div key={task.id} className={`task-row${task.locked ? ' locked' : ''}`}>
                       <div className="color-dot" style={{ backgroundColor: PALETTE[i % PALETTE.length] }} />
                       <input
                         className="task-name-input"
@@ -565,6 +627,7 @@ export default function MMPlanner() {
                             placeholder="0"
                             min="0.5"
                             step="0.5"
+                            disabled={task.locked}
                           />
                           <span className="days-unit">일</span>
                           {dayPv != null && <span className="days-preview">= {dayPv.toFixed(2)} MM</span>}
@@ -598,6 +661,15 @@ export default function MMPlanner() {
                           </div>
                         </>
                       )}
+                      <Tooltip text={task.locked ? '고정 해제' : '비율 고정'} dir="up" align="end">
+                        <button
+                          className={`lock-btn${task.locked ? ' locked' : ''}`}
+                          onClick={() => toggleLock(task.id)}
+                          aria-label={task.locked ? '고정 해제' : '고정'}
+                        >
+                          {task.locked ? '🔒' : '🔓'}
+                        </button>
+                      </Tooltip>
                       <button className="remove-btn" onClick={() => removeTask(task.id)}>×</button>
                     </div>
                   );
