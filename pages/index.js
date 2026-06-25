@@ -649,7 +649,7 @@ export default function MMPlanner() {
                           className={`lock-btn${task.locked ? ' locked' : ''}`}
                           onClick={() => toggleLock(task.id)}
                         >
-                          {task.locked ? '🔒 고정됨' : '고정'}
+                          {task.locked ? '🔒 MM비중 고정' : 'MM비중 고정'}
                         </button>
                       </Tooltip>
                       <button className="remove-btn" onClick={() => removeTask(task.id)}>×</button>

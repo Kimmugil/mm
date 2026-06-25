@@ -43,12 +43,12 @@ body {
 }
 
 .page {
-  max-width: 1080px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 44px 28px 100px;
+  padding: 36px 20px 80px;
 }
 @media (max-width: 720px) {
-  .page { padding: 28px 16px 72px; }
+  .page { padding: 20px 12px 60px; }
 }
 
 /* ── Tooltip ───────────────────────────────────────── */
