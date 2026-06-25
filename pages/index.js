@@ -324,6 +324,14 @@ export default function MMPlanner() {
   const activeTotal = activeTasks.reduce((s, t) => s + t.weight, 0);
   const mm = w => totalWeight > 0 ? w / totalWeight : 0;
 
+  function resetAll() {
+    if (!window.confirm('모든 업무 목록과 MM 비율을 초기 상태로 되돌릴까요?')) return;
+    const fresh = defaultTasks().map((t, i) => ({ ...t, colorIdx: i }));
+    setTasks(fresh);
+    setEditMm(null);
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
   function addTask() {
     const colorIdx = tasks.length % PALETTE.length;
     setTasks(p => [...p, { id: uid(), name: '', weight: 0, locked: false, colorIdx }]);
@@ -488,6 +496,9 @@ export default function MMPlanner() {
               </div>
             </div>
             <div className="header-right">
+              <Tooltip text="모든 업무 목록을 초기 상태로 되돌립니다" dir="down" align="end">
+                <button className="reset-btn" onClick={resetAll}>↺ 초기화</button>
+              </Tooltip>
               <button className="guide-btn" onClick={() => setShowGuide(true)}>사용법</button>
               <div className="month-picker">
                 <label>기준 월</label>

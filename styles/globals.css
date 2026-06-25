@@ -147,6 +147,21 @@ body {
   gap: 10px;
 }
 
+.reset-btn {
+  padding: 7px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--subtle);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+  align-self: flex-end;
+}
+.reset-btn:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+
 .guide-btn {
   padding: 7px 14px;
   border: 1.5px solid var(--border);
