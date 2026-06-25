@@ -480,7 +480,7 @@ export default function MMPlanner() {
 
       {/* ── Notice banner ── */}
       <div className="notice-bar">
-        MM 입력 시 보조수단으로만 활용해 주세요
+        입력한 정보는 사용자 브라우저에만 남으며, 별도 서버로 전송되지 않습니다.
       </div>
 
       <div className="page">
