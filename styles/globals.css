@@ -449,6 +449,30 @@ body {
 .equalize-btn:hover { background: #e0e0ff; border-color: rgba(99,102,241,.4); }
 
 
+.copy-row {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-lt);
+  background: var(--bg);
+}
+.copy-btn {
+  height: 26px;
+  padding: 0 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.copy-btn:hover  { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.copy-btn.copied { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
+
 .task-row {
   display: flex;
   align-items: center;
