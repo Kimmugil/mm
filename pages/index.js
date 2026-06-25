@@ -294,7 +294,7 @@ export default function MMPlanner() {
       const parsed = raw ? JSON.parse(raw) : null;
       setTasks(Array.isArray(parsed) && parsed.length ? parsed : defaultTasks());
       setMonth(localStorage.getItem(MONTH_KEY) || currentYearMonth());
-      setChartType(localStorage.getItem(CHART_KEY) || 'bar');
+      setChartType(localStorage.getItem(CHART_KEY) || 'pie');
     } catch {
       setTasks(defaultTasks());
       setMonth(currentYearMonth());
