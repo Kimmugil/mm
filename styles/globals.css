@@ -545,3 +545,224 @@ body {
   font-size: 11.5px;
   color: var(--text-subtle);
 }
+
+/* ── Working days info ── */
+.working-days-info {
+  margin-top: 14px;
+}
+
+.wd-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wd-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  box-shadow: var(--shadow-sm);
+}
+
+.wd-pill-label {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.wd-pill strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.wd-divider {
+  color: var(--text-subtle);
+  font-size: 12px;
+}
+
+/* ── Days mode ── */
+.bar-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.mode-btn {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.mode-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.mode-btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.mode-btn--active:hover {
+  opacity: 0.88;
+  color: #fff;
+}
+
+.days-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.days-total-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.days-over {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.apply-days-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.apply-days-btn:hover { opacity: 0.85; }
+
+.days-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px;
+  background: var(--accent-bg);
+  border-bottom: 1px solid rgba(59,130,246,0.12);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.days-guide strong {
+  color: var(--text);
+}
+
+.days-guide-hint {
+  font-size: 11.5px;
+  color: var(--text-subtle);
+}
+
+.task-row--days {
+  gap: 10px;
+}
+
+.days-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.days-input {
+  width: 62px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 14px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  outline: none;
+  text-align: right;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.days-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+.days-unit {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.days-preview {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 64px;
+  font-variant-numeric: tabular-nums;
+}
+
+.days-summary {
+  border-top: 1px solid var(--border-light);
+  padding: 14px 16px;
+  background: #fafbfd;
+}
+
+.days-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-bottom: 10px;
+}
+
+.days-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.days-summary-name {
+  color: var(--text-muted);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.days-summary-mm {
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.days-summary-total {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.days-summary-total strong {
+  color: var(--text);
+}
+
+.days-summary-note {
+  color: var(--text-subtle);
+  font-size: 11.5px;
+}

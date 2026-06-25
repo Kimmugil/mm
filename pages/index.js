@@ -18,8 +18,8 @@ function uid() { return ++_uid; }
 
 function defaultTasks() {
   return [
-    { id: uid(), name: '업무 항목 1', weight: 1 },
-    { id: uid(), name: '업무 항목 2', weight: 1 },
+    { id: uid(), name: '업무 항목 1', weight: 1, days: '' },
+    { id: uid(), name: '업무 항목 2', weight: 1, days: '' },
   ];
 }
 
@@ -36,6 +36,18 @@ function formatMonth(ym) {
   return `${y}년 ${parseInt(m, 10)}월`;
 }
 
+function getWorkingDays(yearMonth) {
+  if (!yearMonth) return 0;
+  const [y, m] = yearMonth.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  let count = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(y, m - 1, d).getDay();
+    if (dow !== 0 && dow !== 6) count++;
+  }
+  return count;
+}
+
 export default function MMPlanner() {
   const [tasks, setTasks] = useState([]);
   const [ready, setReady] = useState(false);
@@ -46,6 +58,7 @@ export default function MMPlanner() {
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState(false);
+  const [daysMode, setDaysMode] = useState(false);
   const barRef = useRef(null);
 
   useEffect(() => {
@@ -79,11 +92,14 @@ export default function MMPlanner() {
     if (ready && month) localStorage.setItem(MONTH_KEY, month);
   }, [month, ready]);
 
+  const workingDays = getWorkingDays(month);
+  const dayMM = workingDays > 0 ? 1 / workingDays : 0;
+
   const totalWeight = tasks.reduce((s, t) => s + t.weight, 0);
   const mm = (w) => (totalWeight === 0 ? 0 : w / totalWeight);
 
   function addTask() {
-    setTasks(prev => [...prev, { id: uid(), name: '', weight: 1 }]);
+    setTasks(prev => [...prev, { id: uid(), name: '', weight: 1, days: '' }]);
   }
 
   function removeTask(id) {
@@ -95,7 +111,27 @@ export default function MMPlanner() {
   }
 
   function equalizeAll() {
-    setTasks(prev => prev.map(t => ({ ...t, weight: 1 })));
+    setTasks(prev => prev.map(t => ({ ...t, weight: 1, days: '' })));
+  }
+
+  function updateDays(id, rawVal) {
+    const val = rawVal === '' ? '' : rawVal;
+    const numDays = parseFloat(val);
+    setTasks(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      if (val === '' || isNaN(numDays) || numDays <= 0) {
+        return { ...t, days: val, weight: t.weight };
+      }
+      return { ...t, days: val, weight: numDays };
+    }));
+  }
+
+  function applyAllDays() {
+    setTasks(prev => prev.map(t => {
+      const numDays = parseFloat(t.days);
+      if (!isNaN(numDays) && numDays > 0) return { ...t, weight: numDays };
+      return t;
+    }));
   }
 
   const handleDragStart = useCallback((e, idx) => {
@@ -116,8 +152,8 @@ export default function MMPlanner() {
       const w0 = clamp(startWeights[idx] + dw, minW, pairTotal - minW);
       const w1 = pairTotal - w0;
       setTasks(prev => prev.map((t, i) => {
-        if (i === idx) return { ...t, weight: w0 };
-        if (i === idx + 1) return { ...t, weight: w1 };
+        if (i === idx) return { ...t, weight: w0, days: '' };
+        if (i === idx + 1) return { ...t, weight: w1, days: '' };
         return t;
       }));
     }
@@ -134,18 +170,16 @@ export default function MMPlanner() {
 
   function submitPassword() {
     const envPw = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-    if (!envPw) {
-      setAdminAuthed(true);
-      setPwError(false);
-      return;
-    }
-    if (pwInput === envPw) {
-      setAdminAuthed(true);
-      setPwError(false);
-    } else {
-      setPwError(true);
-    }
+    if (!envPw) { setAdminAuthed(true); return; }
+    if (pwInput === envPw) { setAdminAuthed(true); setPwError(false); }
+    else setPwError(true);
   }
+
+  const totalDaysEntered = tasks.reduce((s, t) => {
+    const n = parseFloat(t.days);
+    return s + (isNaN(n) ? 0 : n);
+  }, 0);
+  const daysEntered = tasks.filter(t => t.days !== '' && !isNaN(parseFloat(t.days)));
 
   if (!ready) return null;
 
@@ -179,6 +213,27 @@ export default function MMPlanner() {
               />
             </div>
           </div>
+
+          {workingDays > 0 && (
+            <div className="working-days-info">
+              <div className="wd-pills">
+                <span className="wd-pill">
+                  <span className="wd-pill-label">업무일</span>
+                  <strong>{workingDays}일</strong>
+                </span>
+                <span className="wd-divider">·</span>
+                <span className="wd-pill">
+                  <span className="wd-pill-label">1일 MM</span>
+                  <strong>{dayMM.toFixed(4)}</strong>
+                </span>
+                <span className="wd-divider">·</span>
+                <span className="wd-pill">
+                  <span className="wd-pill-label">1주(5일)</span>
+                  <strong>{(dayMM * 5).toFixed(4)}</strong>
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {tasks.length === 0 ? (
@@ -190,9 +245,18 @@ export default function MMPlanner() {
           <div className="bar-wrap">
             <div className="bar-meta">
               <span>{formatMonth(month)} 공수 배분</span>
-              <button className="equalize-btn" onClick={equalizeAll} title="모든 항목을 균등 배분">
-                균등 배분
-              </button>
+              <div className="bar-actions">
+                <button
+                  className={`mode-btn${daysMode ? ' mode-btn--active' : ''}`}
+                  onClick={() => setDaysMode(v => !v)}
+                  title="일수 입력 모드"
+                >
+                  일수 입력
+                </button>
+                <button className="equalize-btn" onClick={equalizeAll} title="균등 배분">
+                  균등 배분
+                </button>
+              </div>
             </div>
 
             <div className="bar-track" ref={barRef} style={{ cursor: isDragging ? 'col-resize' : undefined }}>
@@ -232,9 +296,7 @@ export default function MMPlanner() {
               })}
             </div>
 
-            <p className="bar-hint">
-              ← 구분선을 드래그해서 각 업무의 비율을 조정하세요 →
-            </p>
+            <p className="bar-hint">← 구분선을 드래그해서 각 업무의 비율을 조정하세요 →</p>
           </div>
         )}
 
@@ -242,13 +304,47 @@ export default function MMPlanner() {
           <div className="card">
             <div className="card-header">
               <span>업무 목록</span>
-              <span className="card-header-hint">이름을 클릭해 편집</span>
+              {daysMode ? (
+                <div className="days-header-right">
+                  {totalDaysEntered > 0 && (
+                    <span className="days-total-hint">
+                      입력 합계 {totalDaysEntered}일 / {workingDays}일
+                      {totalDaysEntered > workingDays && (
+                        <span className="days-over"> (초과)</span>
+                      )}
+                    </span>
+                  )}
+                  {daysEntered.length > 0 && (
+                    <button className="apply-days-btn" onClick={applyAllDays}>
+                      비율 적용
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <span className="card-header-hint">이름 클릭해 편집 · 바 드래그로 비율 조정</span>
+              )}
             </div>
+
+            {daysMode && workingDays > 0 && (
+              <div className="days-guide">
+                <span>
+                  {formatMonth(month)} 업무일 <strong>{workingDays}일</strong> 기준
+                  &nbsp;·&nbsp; 1일 = <strong>{dayMM.toFixed(4)} MM</strong>
+                </span>
+                <span className="days-guide-hint">각 업무에 소요 일수를 입력하면 MM이 자동 계산됩니다</span>
+              </div>
+            )}
+
             {tasks.map((task, i) => {
               const ratio = mm(task.weight);
               const pct = ratio * 100;
+              const dayVal = parseFloat(task.days);
+              const daysMM = !isNaN(dayVal) && dayVal > 0 && workingDays > 0
+                ? dayVal / workingDays
+                : null;
+
               return (
-                <div key={task.id} className="task-row">
+                <div key={task.id} className={`task-row${daysMode ? ' task-row--days' : ''}`}>
                   <div className="color-dot" style={{ backgroundColor: PALETTE[i % PALETTE.length] }} />
                   <input
                     className="task-name-input"
@@ -256,20 +352,69 @@ export default function MMPlanner() {
                     onChange={e => updateName(task.id, e.target.value)}
                     placeholder={`항목 ${i + 1}`}
                   />
-                  <div className="task-stats">
-                    <span className="task-mm">{ratio.toFixed(2)}</span>
-                    <span className="task-pct">{pct.toFixed(1)}%</span>
-                  </div>
-                  <div className="task-bar-mini">
-                    <div
-                      className="task-bar-fill"
-                      style={{ width: `${pct}%`, backgroundColor: PALETTE[i % PALETTE.length] }}
-                    />
-                  </div>
+
+                  {daysMode ? (
+                    <div className="days-input-wrap">
+                      <input
+                        type="number"
+                        className="days-input"
+                        value={task.days}
+                        onChange={e => updateDays(task.id, e.target.value)}
+                        placeholder="0"
+                        min="0.5"
+                        step="0.5"
+                      />
+                      <span className="days-unit">일</span>
+                      {daysMM !== null && (
+                        <span className="days-preview">= {daysMM.toFixed(2)} MM</span>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="task-stats">
+                        <span className="task-mm">{ratio.toFixed(2)}</span>
+                        <span className="task-pct">{pct.toFixed(1)}%</span>
+                      </div>
+                      <div className="task-bar-mini">
+                        <div
+                          className="task-bar-fill"
+                          style={{ width: `${pct}%`, backgroundColor: PALETTE[i % PALETTE.length] }}
+                        />
+                      </div>
+                    </>
+                  )}
+
                   <button className="remove-btn" onClick={() => removeTask(task.id)} title="삭제">×</button>
                 </div>
               );
             })}
+
+            {daysMode && daysEntered.length > 0 && workingDays > 0 && (
+              <div className="days-summary">
+                <div className="days-summary-row">
+                  {tasks.map((task, i) => {
+                    const d = parseFloat(task.days);
+                    if (isNaN(d) || d <= 0) return null;
+                    const taskMM = d / workingDays;
+                    return (
+                      <div key={task.id} className="days-summary-item">
+                        <div className="color-dot" style={{ backgroundColor: PALETTE[i % PALETTE.length] }} />
+                        <span className="days-summary-name">{task.name || `항목 ${i + 1}`}</span>
+                        <span className="days-summary-mm">{taskMM.toFixed(4)} MM</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="days-summary-total">
+                  입력 일수 기준 총 MM합: <strong>{(totalDaysEntered / workingDays).toFixed(4)}</strong>
+                  {Math.abs(totalDaysEntered / workingDays - 1) > 0.001 && (
+                    <span className="days-summary-note">
+                      &nbsp;(1.00 기준으로 비율만 반영됨)
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -282,10 +427,7 @@ export default function MMPlanner() {
 
         {/* ── Admin memo section ── */}
         <div className="admin-section">
-          <button
-            className="admin-toggle"
-            onClick={() => setAdminOpen(o => !o)}
-          >
+          <button className="admin-toggle" onClick={() => setAdminOpen(o => !o)}>
             <span className="lock-icon">{adminAuthed ? '🔓' : '🔒'}</span>
             관리자 메모
             <span className="chevron">{adminOpen ? '▲' : '▼'}</span>
@@ -298,7 +440,7 @@ export default function MMPlanner() {
                   <p className="pw-desc">
                     {hasAdminPw
                       ? '관리자 비밀번호를 입력하세요.'
-                      : '환경 변수 NEXT_PUBLIC_ADMIN_PASSWORD가 설정되지 않았습니다. 비밀번호 없이 진행합니다.'}
+                      : '환경 변수가 설정되지 않았습니다. 비밀번호 없이 진행합니다.'}
                   </p>
                   {hasAdminPw && (
                     <>
@@ -318,7 +460,7 @@ export default function MMPlanner() {
                     </>
                   )}
                   {!hasAdminPw && (
-                    <button className="pw-btn" onClick={submitPassword}>진입</button>
+                    <button className="pw-btn" style={{ alignSelf: 'flex-start' }} onClick={submitPassword}>진입</button>
                   )}
                 </div>
               ) : (
