@@ -19,7 +19,7 @@ function defaultTasks() {
   const names = ['업무 항목 1','업무 항목 2','업무 항목 3','업무 항목 4','업무 항목 5',
                  '업무 항목 6','업무 항목 7','업무 항목 8','업무 항목 9','업무 항목 10'];
   return names.map((name, i) => ({
-    id: uid(), name, weight: i < 2 ? 1 : 0, days: '', locked: false,
+    id: uid(), name, weight: i < 2 ? 1 : 0, locked: false,
   }));
 }
 
@@ -85,7 +85,7 @@ function GuideModal({ onClose }) {
               MM(Man-Month)은 한 사람이 <strong>한 달 동안 수행할 수 있는 업무량을 1</strong>로 표현한 단위입니다.
               여러 업무를 동시에 진행할 때, 각 업무에 투입한 비중을 비율로 나타내며 총합이 1.00 MM이 됩니다.
             </p>
-            <p className="guide-note">※ 일수 기준 수치는 참고용입니다. 업무 난이도·집중도를 고려해 직접 조정하세요.</p>
+            <p className="guide-note">※ 이 도구는 MM 입력의 보조수단으로만 활용해 주세요. 실제 MM은 본인의 판단으로 입력하세요.</p>
           </section>
 
           <section>
@@ -97,19 +97,19 @@ function GuideModal({ onClose }) {
           <section>
             <h3>② 업무 추가 · 편집</h3>
             <p>하단 <strong>+ 업무 추가</strong> 버튼으로 항목을 추가하고, 이름 영역을 클릭하면 바로 수정할 수 있습니다. × 버튼으로 삭제합니다.</p>
-            <p className="guide-note">※ 비율 0인 항목은 차트에 표시되지 않습니다. MM 숫자를 직접 입력해 활성화하세요.</p>
+            <p className="guide-note">※ 비율 0인 항목은 차트에 표시되지 않습니다. MM 숫자를 클릭해 값을 입력하면 활성화됩니다.</p>
           </section>
 
           <section>
-            <h3>③ 비율 조정 방법</h3>
+            <h3>③ MM 비율 조정</h3>
             <div className="guide-row">
               <div className="guide-card">
-                <strong>막대 차트</strong>
-                <span>구분선을 <em>위아래</em>로 드래그</span>
+                <strong>드래그</strong>
+                <span>왼쪽 차트의 경계를 드래그해 비중을 시각적으로 조절</span>
               </div>
               <div className="guide-card">
-                <strong>원형 차트</strong>
-                <span>흰색 핸들 점을 드래그해 경계 이동</span>
+                <strong>직접 입력</strong>
+                <span>MM 숫자를 클릭해 직접 입력. 나머지 항목 자동 재조정</span>
               </div>
               <div className="guide-card">
                 <strong>균등 배분</strong>
@@ -119,14 +119,13 @@ function GuideModal({ onClose }) {
           </section>
 
           <section>
-            <h3>④ 입력 모드</h3>
-            <p><strong>MM 직접 입력</strong>: 각 업무의 MM 숫자를 클릭하면 직접 입력할 수 있습니다. 나머지 미고정 업무들이 비율을 유지하며 자동 재조정됩니다.</p>
-            <p><strong>일수로 입력</strong>: 업무일수 기준으로 며칠 투입했는지 입력하면 MM이 자동 계산됩니다. 탭 전환 시 현재 비율 기준으로 일수가 자동 채워집니다.</p>
+            <h3>④ 일수·시간 환산</h3>
+            <p>기준 월을 선택하면 각 업무 행에 <strong>환산 일수와 시간</strong>이 자동으로 표시됩니다. 참고용 수치이며 실제 투입 일수와 다를 수 있습니다.</p>
           </section>
 
           <section>
             <h3>⑤ 고정 기능</h3>
-            <p>각 업무 행의 <strong>🔒 버튼</strong>을 클릭하면 해당 업무의 MM 비율이 고정됩니다. 고정된 항목은 드래그·균등 배분·일수 적용 등 다른 조작에 의해 변경되지 않습니다.</p>
+            <p>각 업무 행의 <strong>🔒 버튼</strong>을 클릭하면 해당 업무의 MM 비율이 고정됩니다. 고정된 항목은 드래그·균등 배분 등 다른 조작에 의해 변경되지 않습니다.</p>
           </section>
 
           <section>
@@ -293,7 +292,6 @@ export default function MMPlanner() {
   const [month,      setMonth]      = useState('');
   const [chartType,  setChartType]  = useState('pie');
   const [isDragging, setIsDragging] = useState(false);
-  const [daysMode,   setDaysMode]   = useState(false);
   const [showGuide,  setShowGuide]  = useState(false);
   const [editMm,     setEditMm]     = useState(null);
 
@@ -318,23 +316,22 @@ export default function MMPlanner() {
   useEffect(() => { if (ready && month) localStorage.setItem(MONTH_KEY, month); }, [month, ready]);
   useEffect(() => { if (ready) localStorage.setItem(CHART_KEY, chartType); }, [chartType, ready]);
 
-  const workingDays  = getWorkingDays(month);
-  const dayMM        = workingDays > 0 ? 1 / workingDays : 0;
-  const hourMM       = dayMM / 8;
-  const totalWeight  = tasks.reduce((s, t) => s + t.weight, 0);
-  const activeTasks  = tasks.filter(t => t.weight > 0);
-  const activeTotal  = activeTasks.reduce((s, t) => s + t.weight, 0);
+  const workingDays = getWorkingDays(month);
+  const dayMM       = workingDays > 0 ? 1 / workingDays : 0;
+  const hourMM      = dayMM / 8;
+  const totalWeight = tasks.reduce((s, t) => s + t.weight, 0);
+  const activeTasks = tasks.filter(t => t.weight > 0);
+  const activeTotal = activeTasks.reduce((s, t) => s + t.weight, 0);
   const mm = w => totalWeight > 0 ? w / totalWeight : 0;
 
   function addTask() {
     const colorIdx = tasks.length % PALETTE.length;
-    setTasks(p => [...p, { id: uid(), name: '', weight: 0, days: '', locked: false, colorIdx }]);
+    setTasks(p => [...p, { id: uid(), name: '', weight: 0, locked: false, colorIdx }]);
   }
   function removeTask(id)    { setTasks(p => p.filter(t => t.id !== id)); }
   function updateName(id, v) { setTasks(p => p.map(t => t.id === id ? { ...t, name: v } : t)); }
   function toggleLock(id)    { setTasks(p => p.map(t => t.id === id ? { ...t, locked: !t.locked } : t)); }
 
-  // Equalize only active (weight > 0) unlocked tasks; 0-weight tasks stay at 0
   function equalizeAll() {
     setTasks(p => {
       const total = p.reduce((s, t) => s + t.weight, 0);
@@ -346,33 +343,9 @@ export default function MMPlanner() {
       return p.map(t => {
         if (t.weight === 0) return t;
         if (t.locked) return { ...t, weight: t.weight / total };
-        return { ...t, weight: each, days: '' };
+        return { ...t, weight: each };
       });
     });
-  }
-
-  function enterDaysMode() {
-    if (workingDays > 0) {
-      const total = tasks.reduce((s, t) => s + t.weight, 0);
-      setTasks(p => p.map(t => {
-        if (t.locked || t.weight === 0) return t;
-        const ratio = total > 0 ? t.weight / total : 0;
-        const filled = (ratio * workingDays).toFixed(1);
-        return { ...t, days: filled, weight: parseFloat(filled) };
-      }));
-    }
-    setDaysMode(true);
-  }
-
-  function exitDaysMode() {
-    setDaysMode(false);
-  }
-
-  function updateDays(id, val) {
-    const n = parseFloat(val);
-    setTasks(p => p.map(t =>
-      t.id === id ? { ...t, days: val, weight: !isNaN(n) && n > 0 ? n : 0 } : t
-    ));
   }
 
   function startEditMm(id, ratio) {
@@ -382,51 +355,51 @@ export default function MMPlanner() {
   function commitEditMm(id) {
     if (!editMm) return;
     const v = parseFloat(editMm.val);
-    if (!isNaN(v) && v > 0 && v < 1) {
-      const total = tasks.reduce((s, t) => s + t.weight, 0);
-      const lockedRatioSum       = tasks.filter(t => t.locked && t.id !== id).reduce((s, t) => s + (total > 0 ? t.weight / total : 0), 0);
-      const available            = 1 - v - lockedRatioSum;
-      const unlockedOthers       = tasks.filter(t => !t.locked && t.id !== id && t.weight > 0);
-      const unlockedOtherRatioSum = total > 0 ? unlockedOthers.reduce((s, t) => s + t.weight / total, 0) : 0;
+    if (!isNaN(v) && v >= 0 && v < 1) {
+      if (v === 0) {
+        setTasks(p => p.map(t => t.id === id ? { ...t, weight: 0 } : t));
+      } else {
+        const total = tasks.reduce((s, t) => s + t.weight, 0);
+        const lockedRatioSum        = tasks.filter(t => t.locked && t.id !== id).reduce((s, t) => s + (total > 0 ? t.weight / total : 0), 0);
+        const available             = 1 - v - lockedRatioSum;
+        const unlockedOthers        = tasks.filter(t => !t.locked && t.id !== id && t.weight > 0);
+        const unlockedOtherRatioSum = total > 0 ? unlockedOthers.reduce((s, t) => s + t.weight / total, 0) : 0;
 
-      if (available >= 0) {
-        setTasks(p => p.map(t => {
-          if (t.id === id) return { ...t, weight: v, days: '' };
-          if (t.locked)    return { ...t, weight: total > 0 ? t.weight / total : t.weight };
-          if (t.weight === 0) return t; // keep 0-weight tasks at 0
-          const r = total > 0 ? t.weight / total : 0;
-          const newR = unlockedOtherRatioSum > 0
-            ? available * (r / unlockedOtherRatioSum)
-            : available / Math.max(unlockedOthers.length, 1);
-          return { ...t, weight: Math.max(newR, 0.001), days: '' };
-        }));
+        if (available >= 0) {
+          setTasks(p => p.map(t => {
+            if (t.id === id) return { ...t, weight: v };
+            if (t.locked)    return { ...t, weight: total > 0 ? t.weight / total : t.weight };
+            if (t.weight === 0) return t;
+            const r = total > 0 ? t.weight / total : 0;
+            const newR = unlockedOtherRatioSum > 0
+              ? available * (r / unlockedOtherRatioSum)
+              : available / Math.max(unlockedOthers.length, 1);
+            return { ...t, weight: Math.max(newR, 0.001) };
+          }));
+        }
       }
-    } else if (!isNaN(parseFloat(editMm.val)) && parseFloat(editMm.val) === 0) {
-      // Allow setting to 0 explicitly
-      setTasks(p => p.map(t => t.id === id ? { ...t, weight: 0, days: '' } : t));
     }
     setEditMm(null);
   }
 
-  // Vertical bar drag — ID-based, uses activeTotal for pixel mapping
   const handleVDrag = useCallback((e, id0, id1, trackRef) => {
     const t0 = tasks.find(t => t.id === id0);
     const t1 = tasks.find(t => t.id === id1);
     if (!t0 || !t1 || t0.locked || t1.locked) return;
     e.preventDefault();
-    const rect    = trackRef.current.getBoundingClientRect();
-    const startY  = e.clientY;
+    const rect     = trackRef.current.getBoundingClientRect();
+    const startY   = e.clientY;
     const actTotal = tasks.filter(t => t.weight > 0).reduce((s, t) => s + t.weight, 0);
-    const minW    = actTotal * MIN_RATIO;
-    const w0start = t0.weight, w1start = t1.weight;
-    const pairW   = w0start + w1start;
+    const minW     = actTotal * MIN_RATIO;
+    const w0start  = t0.weight, w1start = t1.weight;
+    const pairW    = w0start + w1start;
     setIsDragging(true);
     const onMove = ev => {
       const dw = ((ev.clientY - startY) / rect.height) * actTotal;
       const w0 = clamp(w0start + dw, minW, pairW - minW);
       setTasks(p => p.map(t => {
-        if (t.id === id0) return { ...t, weight: w0,         days: '' };
-        if (t.id === id1) return { ...t, weight: pairW - w0, days: '' };
+        if (t.id === id0) return { ...t, weight: w0 };
+        if (t.id === id1) return { ...t, weight: pairW - w0 };
         return t;
       }));
     };
@@ -439,7 +412,6 @@ export default function MMPlanner() {
     window.addEventListener('mouseup',   onUp);
   }, [tasks]);
 
-  // Pie boundary drag — ID-based
   const handlePieDrag = useCallback((e, id0, id1, svgRef) => {
     const t0 = tasks.find(t => t.id === id0);
     const t1 = tasks.find(t => t.id === id1);
@@ -450,20 +422,17 @@ export default function MMPlanner() {
     const svgRect = svg.getBoundingClientRect();
     const scaleX  = 260 / svgRect.width;
     const scaleY  = 260 / svgRect.height;
-
     const getAngle = (cx, cy) => {
       const x = (cx - svgRect.left) * scaleX - PIE_CX;
       const y = (cy - svgRect.top)  * scaleY - PIE_CY;
       return Math.atan2(y, x);
     };
-
     const startAngle = getAngle(e.clientX, e.clientY);
     const actTotal   = tasks.filter(t => t.weight > 0).reduce((s, t) => s + t.weight, 0);
     const minW       = actTotal * MIN_RATIO;
     const w0start    = t0.weight, w1start = t1.weight;
     const pairTotal  = w0start + w1start;
     setIsDragging(true);
-
     const onMove = ev => {
       let dAngle = getAngle(ev.clientX, ev.clientY) - startAngle;
       if (dAngle >  Math.PI) dAngle -= 2 * Math.PI;
@@ -471,8 +440,8 @@ export default function MMPlanner() {
       const dW = (dAngle / (2 * Math.PI)) * actTotal;
       const w0 = clamp(w0start + dW, minW, pairTotal - minW);
       setTasks(p => p.map(t => {
-        if (t.id === id0) return { ...t, weight: w0,              days: '' };
-        if (t.id === id1) return { ...t, weight: pairTotal - w0,  days: '' };
+        if (t.id === id0) return { ...t, weight: w0 };
+        if (t.id === id1) return { ...t, weight: pairTotal - w0 };
         return t;
       }));
     };
@@ -487,13 +456,8 @@ export default function MMPlanner() {
 
   if (!ready) return null;
 
-  const totalDays  = tasks.reduce((s, t) => { const n = parseFloat(t.days); return s + (isNaN(n) ? 0 : n); }, 0);
-  const hasDays    = tasks.some(t => t.days !== '' && !isNaN(parseFloat(t.days)));
-  const overBudget = workingDays > 0 && totalDays > workingDays;
   const lockedCount = tasks.filter(t => t.locked).length;
-
-  // Chart only shows active (weight > 0) tasks with color index preserved
-  const chartTasks = activeTasks;
+  const chartTasks  = activeTasks;
 
   return (
     <>
@@ -505,6 +469,11 @@ export default function MMPlanner() {
       <style>{`body{cursor:${isDragging ? (chartType === 'pie' ? 'grabbing' : 'row-resize') : 'default'}}`}</style>
 
       {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
+
+      {/* ── Notice banner ── */}
+      <div className="notice-bar">
+        MM 입력 시 보조수단으로만 활용해 주세요
+      </div>
 
       <div className="page">
 
@@ -575,20 +544,18 @@ export default function MMPlanner() {
                 </button>
               </div>
 
+              <p className="chart-guide-text">
+                MM이 입력된 업무들의 비중을 드래그로 조절할 수 있습니다.{lockedCount > 0 ? ' 🔒 고정 항목 경계는 드래그 제외됩니다.' : ''}
+              </p>
+
               {chartTasks.length === 0 ? (
                 <div className="chart-empty">
                   <p>비율이 0보다 큰 항목이 없습니다.<br />우측 목록에서 MM 값을 입력하세요.</p>
                 </div>
               ) : chartType === 'bar' ? (
-                <>
-                  <VertBar tasks={chartTasks} totalWeight={activeTotal} onDragStart={handleVDrag} />
-                  {chartTasks.length > 1 && <p className="chart-hint">↕ 구분선을 드래그해 비율 조정{lockedCount > 0 ? ' · 🔒 고정 항목은 제외' : ''}</p>}
-                </>
+                <VertBar tasks={chartTasks} totalWeight={activeTotal} onDragStart={handleVDrag} />
               ) : (
-                <>
-                  <DonutChart tasks={chartTasks} totalWeight={activeTotal} onBoundaryDrag={handlePieDrag} />
-                  {chartTasks.length > 1 && <p className="chart-hint">● 흰 점을 드래그해 비율 조정{lockedCount > 0 ? ' · 🔒 고정 항목은 제외' : ''}</p>}
-                </>
+                <DonutChart tasks={chartTasks} totalWeight={activeTotal} onBoundaryDrag={handlePieDrag} />
               )}
             </div>
 
@@ -598,44 +565,19 @@ export default function MMPlanner() {
                 <div className="card-header">
                   <span>
                     업무 목록
-                    <Help text="이름 클릭해 편집 · × 버튼으로 삭제 · 🔒 버튼으로 비율 고정" dir="down" align="start" />
+                    <Help text="이름 클릭해 편집 · MM 숫자 클릭해 직접 입력 · 🔒 버튼으로 비율 고정" dir="down" align="start" />
                   </span>
                   <Tooltip text={lockedCount > 0 ? `활성 미고정 항목만 균등 배분\n고정 항목(${lockedCount}개)은 유지` : '활성 항목을 동일 비율로 초기화'} dir="down" align="end">
                     <button className="equalize-btn" onClick={equalizeAll}>균등 배분</button>
                   </Tooltip>
                 </div>
 
-                <div className="input-tab-row">
-                  <button
-                    className={`input-tab${!daysMode ? ' active' : ''}`}
-                    onClick={exitDaysMode}
-                  >
-                    MM 직접 입력
-                  </button>
-                  <button
-                    className={`input-tab${daysMode ? ' active' : ''}`}
-                    onClick={enterDaysMode}
-                    disabled={workingDays === 0}
-                    title={workingDays === 0 ? '기준 월을 먼저 선택해주세요' : ''}
-                  >
-                    일수로 입력
-                    {workingDays > 0 && <span className="input-tab-sub">{workingDays}일 기준</span>}
-                  </button>
-                </div>
-
-                {daysMode && workingDays > 0 && (
-                  <div className="days-guide-bar">
-                    <span>1일 = <strong>{dayMM.toFixed(4)} MM</strong> · 입력한 일수가 차트에 실시간 반영됩니다</span>
-                    <Help text={`${workingDays}일 기준으로 MM 계산\n초과해도 비율만 반영, 총합 1.00 유지\n고정 항목은 변경되지 않습니다`} dir="up" align="end" />
-                  </div>
-                )}
-
                 {tasks.map((task, i) => {
-                  const ratio = mm(task.weight);
-                  const pct   = ratio * 100;
-                  const dn    = parseFloat(task.days);
-                  const dayPv = (!isNaN(dn) && dn > 0 && workingDays > 0) ? dn / workingDays : null;
-                  const isZero = task.weight === 0;
+                  const ratio   = mm(task.weight);
+                  const pct     = ratio * 100;
+                  const isZero  = task.weight === 0;
+                  const daysVal = workingDays > 0 ? ratio * workingDays : null;
+                  const hoursVal = daysVal != null ? daysVal * 8 : null;
 
                   return (
                     <div key={task.id} className={`task-row${task.locked ? ' locked' : ''}${isZero ? ' zero' : ''}`}>
@@ -646,22 +588,8 @@ export default function MMPlanner() {
                         onChange={e => updateName(task.id, e.target.value)}
                         placeholder={`항목 ${i + 1}`}
                       />
-                      {daysMode ? (
-                        <div className="days-inp-wrap">
-                          <input
-                            type="number"
-                            className="days-inp"
-                            value={task.days}
-                            onChange={e => updateDays(task.id, e.target.value)}
-                            placeholder="0"
-                            min="0"
-                            step="0.5"
-                            disabled={task.locked}
-                          />
-                          <span className="days-unit">일</span>
-                          {dayPv != null && <span className="days-preview">= {dayPv.toFixed(2)} MM</span>}
-                        </div>
-                      ) : editMm?.id === task.id ? (
+
+                      {editMm?.id === task.id ? (
                         <input
                           type="number"
                           className="mm-direct-input"
@@ -676,7 +604,7 @@ export default function MMPlanner() {
                           }}
                         />
                       ) : (
-                        <>
+                        <div className="task-right">
                           <div
                             className="task-stats"
                             onClick={() => startEditMm(task.id, ratio)}
@@ -685,13 +613,19 @@ export default function MMPlanner() {
                             <span className={`task-mm${isZero ? ' zero-mm' : ''}`}>{isZero ? '—' : ratio.toFixed(2)}</span>
                             {!isZero && <span className="task-pct">{pct.toFixed(1)}%</span>}
                           </div>
+                          {!isZero && daysVal != null && (
+                            <span className="task-day-hint">
+                              ≈ {daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h
+                            </span>
+                          )}
                           {!isZero && (
                             <div className="task-mini-bar">
                               <div className="task-mini-fill" style={{ width: `${pct}%`, backgroundColor: PALETTE[task.colorIdx ?? i] }} />
                             </div>
                           )}
-                        </>
+                        </div>
                       )}
+
                       <Tooltip text={task.locked ? '고정 해제' : '비율 고정'} dir="up" align="end">
                         <button
                           className={`lock-btn${task.locked ? ' locked' : ''}`}
@@ -705,16 +639,6 @@ export default function MMPlanner() {
                     </div>
                   );
                 })}
-
-                {daysMode && hasDays && workingDays > 0 && (
-                  <div className="days-summary">
-                    <span>
-                      입력 합계 <strong>{totalDays}</strong>일 / {workingDays}일
-                      {overBudget && <span className="days-over"> 초과</span>}
-                    </span>
-                    <span className="days-sum-mm">기준 MM 합: <strong>{(totalDays / workingDays).toFixed(4)}</strong></span>
-                  </div>
-                )}
               </div>
 
               <div className="task-footer">

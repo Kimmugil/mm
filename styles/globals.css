@@ -30,6 +30,18 @@ body {
   min-height: 100vh;
 }
 
+/* ── Notice banner ─────────────────────────────────── */
+.notice-bar {
+  background: #fffbeb;
+  border-bottom: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: center;
+  padding: 8px 16px;
+  letter-spacing: .1px;
+}
+
 .page {
   max-width: 1080px;
   margin: 0 auto;
@@ -258,12 +270,15 @@ body {
 }
 .chart-tab:not(.active):hover { color: var(--muted); background: rgba(255,255,255,.6); }
 
-.chart-hint {
-  margin-top: 12px;
-  font-size: 11.5px;
-  color: var(--subtle);
-  text-align: center;
-  letter-spacing: .1px;
+.chart-guide-text {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 14px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  background: var(--bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-lt);
 }
 
 /* ── Vertical bar ──────────────────────────────────── */
@@ -495,6 +510,15 @@ body {
   margin: -2px -8px;
 }
 
+.task-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 2px;
+  min-width: 0;
+}
+
 .task-stats {
   display: flex;
   flex-direction: column;
@@ -508,6 +532,14 @@ body {
   transition: background .12s;
 }
 .task-stats:hover { background: var(--accent-bg); }
+
+.task-day-hint {
+  font-size: 11px;
+  color: var(--subtle);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding: 0 4px;
+}
 
 .mm-direct-input {
   width: 70px;
