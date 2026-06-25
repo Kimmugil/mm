@@ -670,7 +670,7 @@ export default function MMPlanner() {
                             onClick={() => startEditMm(task.id, ratio)}
                             title="클릭해서 MM 직접 입력"
                           >
-                            <span className={`task-mm${isZero ? ' zero-mm' : ''}`}>{isZero ? '—' : ratio.toFixed(2)}</span>
+                            <span className={`task-mm${isZero ? ' zero-mm' : ''}`}>{ratio.toFixed(2)}</span>
                             {!isZero && <span className="task-pct">{pct.toFixed(1)}%</span>}
                           </div>
                           {!isZero && daysVal != null && (
