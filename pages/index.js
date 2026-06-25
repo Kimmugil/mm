@@ -395,13 +395,15 @@ export default function MMPlanner() {
       } else {
         const total = tasks.reduce((s, t) => s + t.weight, 0);
         const lockedRatioSum        = tasks.filter(t => t.locked && t.id !== id).reduce((s, t) => s + (total > 0 ? t.weight / total : 0), 0);
-        const available             = 1 - v - lockedRatioSum;
         const unlockedOthers        = tasks.filter(t => !t.locked && t.id !== id && t.weight > 0);
         const unlockedOtherRatioSum = total > 0 ? unlockedOthers.reduce((s, t) => s + t.weight / total, 0) : 0;
+        const maxV                  = Math.max(0, 1 - lockedRatioSum - (unlockedOthers.length > 0 ? unlockedOthers.length * 0.001 : 0));
+        const cv                    = Math.min(v, maxV);
+        const available             = 1 - cv - lockedRatioSum;
 
         if (available >= 0) {
           setTasks(p => p.map(t => {
-            if (t.id === id) return { ...t, weight: v };
+            if (t.id === id) return { ...t, weight: cv };
             if (t.locked)    return { ...t, weight: total > 0 ? t.weight / total : t.weight };
             if (t.weight === 0) return t;
             const r = total > 0 ? t.weight / total : 0;
@@ -491,7 +493,8 @@ export default function MMPlanner() {
   if (!ready) return null;
 
   const lockedCount = tasks.filter(t => t.locked).length;
-  const chartTasks  = [...activeTasks].sort((a, b) => (a.locked ? 1 : 0) - (b.locked ? 1 : 0));
+  const chartTasksPie = [...activeTasks].sort((a, b) => (a.locked ? 1 : 0) - (b.locked ? 1 : 0));
+  const chartTasks    = activeTasks;
 
   return (
     <>
@@ -592,7 +595,7 @@ export default function MMPlanner() {
               ) : chartType === 'bar' ? (
                 <VertBar tasks={chartTasks} totalWeight={activeTotal} onDragStart={handleVDrag} onHover={setHoveredTaskId} />
               ) : (
-                <DonutChart tasks={chartTasks} totalWeight={activeTotal} onBoundaryDrag={handlePieDrag} onHover={setHoveredTaskId} />
+                <DonutChart tasks={chartTasksPie} totalWeight={activeTotal} onBoundaryDrag={handlePieDrag} onHover={setHoveredTaskId} />
               )}
 
               {/* Hover info bar */}
@@ -683,14 +686,16 @@ export default function MMPlanner() {
                         </div>
                       )}
 
-                      <Tooltip text={task.locked ? 'MM 비율이 고정되어 있습니다.\n드래그·균등배분으로 변경되지 않습니다.\n클릭하여 해제' : 'MM 비율 고정\n다른 항목 조정 시 이 항목은 변경되지 않습니다'} dir="up" align="end">
-                        <button
-                          className={`lock-btn${task.locked ? ' locked' : ''}`}
-                          onClick={() => toggleLock(task.id)}
-                        >
-                          {task.locked ? '🔒 고정됨' : 'MM비중 고정'}
-                        </button>
-                      </Tooltip>
+                      {!isZero && (
+                        <Tooltip text={task.locked ? 'MM 비율이 고정되어 있습니다.\n드래그·균등배분으로 변경되지 않습니다.\n클릭하여 해제' : 'MM 비율 고정\n다른 항목 조정 시 이 항목은 변경되지 않습니다'} dir="up" align="end">
+                          <button
+                            className={`lock-btn${task.locked ? ' locked' : ''}`}
+                            onClick={() => toggleLock(task.id)}
+                          >
+                            {task.locked ? '🔒 고정됨' : 'MM비중 고정'}
+                          </button>
+                        </Tooltip>
+                      )}
                       <button className="remove-btn" onClick={() => removeTask(task.id)}>×</button>
                     </div>
                   );
