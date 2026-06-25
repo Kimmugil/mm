@@ -212,12 +212,6 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
                 fill="rgba(255,255,255,.97)" dominantBaseline="middle">
                 {s.ratio.toFixed(2)}
               </text>
-              {s.locked && (
-                <text x={f(lx + 10)} y={f(showName ? ly - 10 : ly - 8)} textAnchor="middle" fontSize="8"
-                  fill="rgba(255,255,255,.8)" dominantBaseline="middle">
-                  🔒
-                </text>
-              )}
             </g>
           );
         })}
