@@ -142,9 +142,12 @@ const PIE_CX = 180, PIE_CY = 140, PIE_R = 72, PIE_IR = 38;
 const R_ELBOW = PIE_R + 16;   // leader line elbow radius
 const H_LEN   = 22;            // horizontal segment length
 
-function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
+function DonutChart({ tasks, totalWeight, onBoundaryDrag, onHover }) {
   const [hov, setHov] = useState(null);
   const svgRef = useRef(null);
+
+  const handleEnter = (id) => { setHov(id); onHover?.(id); };
+  const handleLeave = ()    => { setHov(null); onHover?.(null); };
 
   let angle = -Math.PI / 2;
   const slices = [];
@@ -192,8 +195,8 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
           <path
             key={s.id} d={s.d} fill={s.color} stroke="#fff" strokeWidth="1.5"
             style={{ opacity: hov == null || hov === s.id ? (s.locked ? 0.65 : 1) : 0.35, cursor: 'default', transition: 'opacity .15s' }}
-            onMouseEnter={() => setHov(s.id)}
-            onMouseLeave={() => setHov(null)}
+            onMouseEnter={() => handleEnter(s.id)}
+            onMouseLeave={handleLeave}
           />
         ))}
 
@@ -255,7 +258,7 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
 }
 
 // ── Vertical stacked bar ──────────────────────────────
-function VertBar({ tasks, totalWeight, onDragStart }) {
+function VertBar({ tasks, totalWeight, onDragStart, onHover }) {
   const trackRef = useRef(null);
   return (
     <div className="vbar-track" ref={trackRef}>
@@ -272,7 +275,8 @@ function VertBar({ tasks, totalWeight, onDragStart }) {
             key={task.id}
             className="vbar-seg"
             style={{ height: `${pct}%`, backgroundColor: color, opacity: task.locked ? 0.75 : 1 }}
-            title={`${label}: ${ratio.toFixed(2)} MM (${pct.toFixed(1)}%)${task.locked ? ' [고정됨]' : ''}`}
+            onMouseEnter={() => onHover?.(task.id)}
+            onMouseLeave={() => onHover?.(null)}
           >
             {pct > 5 && (
               <span className="vbar-label">
@@ -299,8 +303,9 @@ export default function MMPlanner() {
   const [month,      setMonth]      = useState('');
   const [chartType,  setChartType]  = useState('pie');
   const [isDragging, setIsDragging] = useState(false);
-  const [showGuide,  setShowGuide]  = useState(false);
-  const [editMm,     setEditMm]     = useState(null);
+  const [showGuide,    setShowGuide]    = useState(false);
+  const [editMm,       setEditMm]       = useState(null);
+  const [hoveredTaskId, setHoveredTaskId] = useState(null);
 
   useEffect(() => {
     try {
@@ -576,10 +581,30 @@ export default function MMPlanner() {
                   <p>비율이 0보다 큰 항목이 없습니다.<br />우측 목록에서 MM 값을 입력하세요.</p>
                 </div>
               ) : chartType === 'bar' ? (
-                <VertBar tasks={chartTasks} totalWeight={activeTotal} onDragStart={handleVDrag} />
+                <VertBar tasks={chartTasks} totalWeight={activeTotal} onDragStart={handleVDrag} onHover={setHoveredTaskId} />
               ) : (
-                <DonutChart tasks={chartTasks} totalWeight={activeTotal} onBoundaryDrag={handlePieDrag} />
+                <DonutChart tasks={chartTasks} totalWeight={activeTotal} onBoundaryDrag={handlePieDrag} onHover={setHoveredTaskId} />
               )}
+
+              {/* Hover info bar */}
+              {(() => {
+                const ht = hoveredTaskId ? tasks.find(t => t.id === hoveredTaskId) : null;
+                if (!ht) return <div className="chart-hover-bar chart-hover-bar--empty">&nbsp;</div>;
+                const ratio   = mm(ht.weight);
+                const daysVal = workingDays > 0 ? ratio * workingDays : null;
+                const hoursVal = daysVal != null ? daysVal * 8 : null;
+                return (
+                  <div className="chart-hover-bar">
+                    <span className="color-dot" style={{ backgroundColor: PALETTE[ht.colorIdx] }} />
+                    <span className="chart-hover-name">{ht.name || '(이름 없음)'}</span>
+                    <strong className="chart-hover-mm">{ratio.toFixed(2)} MM</strong>
+                    {daysVal != null && (
+                      <span className="chart-hover-days">≈ {daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h</span>
+                    )}
+                    {ht.locked && <span className="lock-badge">고정됨</span>}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Right: Task list */}
@@ -654,7 +679,7 @@ export default function MMPlanner() {
                           className={`lock-btn${task.locked ? ' locked' : ''}`}
                           onClick={() => toggleLock(task.id)}
                         >
-                          {task.locked ? '🔒 MM비중 고정' : 'MM비중 고정'}
+                          {task.locked ? '🔒 고정됨' : 'MM비중 고정'}
                         </button>
                       </Tooltip>
                       <button className="remove-btn" onClick={() => removeTask(task.id)}>×</button>

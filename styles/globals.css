@@ -287,6 +287,28 @@ body {
 }
 .chart-tab:not(.active):hover { color: var(--muted); background: rgba(255,255,255,.6); }
 
+/* ── Chart hover info bar ──────────────────────────── */
+.chart-hover-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 9px 14px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  min-height: 40px;
+  transition: opacity .15s;
+}
+.chart-hover-bar--empty {
+  border-color: transparent;
+  background: transparent;
+}
+.chart-hover-name { flex: 1; color: var(--text); font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chart-hover-mm   { color: var(--accent); font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.chart-hover-days { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
 .chart-guide-text {
   font-size: 12px;
   color: var(--muted);
