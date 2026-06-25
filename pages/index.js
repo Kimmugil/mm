@@ -3,7 +3,7 @@ import Head from 'next/head';
 
 const STORAGE_KEY = 'mm-planner-v1';
 const MONTH_KEY   = 'mm-planner-month';
-const CHART_KEY   = 'mm-planner-chart';
+const CHART_KEY   = 'mm-planner-chart-v2';
 
 const PALETTE = [
   '#4F86C6','#5BAD6F','#E07B54','#9B59B6','#E8B84B',

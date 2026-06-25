@@ -324,7 +324,7 @@ body {
 
 /* ── Pie / donut ───────────────────────────────────── */
 .pie-wrap     { display: flex; flex-direction: column; align-items: center; }
-.pie-svg      { width: 100%; max-width: 260px; }
+.pie-svg      { width: 100%; }
 .pie-info-row {
   display: flex;
   align-items: center;
