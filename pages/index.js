@@ -243,12 +243,17 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag, onHover }) {
         })}
 
         {/* Drag handles */}
-        {tasks.length > 1 && handles.map(h => h.isLocked ? null : (
+        {tasks.length > 1 && handles.map(h => h.isLocked ? (
+          <g key={`h-${h.id0}`} style={{ pointerEvents: 'none' }}>
+            <circle cx={f(h.hx)} cy={f(h.hy)} r="6" fill="rgba(255,255,255,.7)" stroke="#d0d5e0" strokeWidth="1.5" />
+            <text x={f(h.hx)} y={f(h.hy)} textAnchor="middle" dominantBaseline="middle" fontSize="6">🔒</text>
+          </g>
+        ) : (
           <circle
             key={`h-${h.id0}`}
-            cx={f(h.hx)} cy={f(h.hy)} r="4"
-            fill="white" stroke="#b0b8cc" strokeWidth="1.5"
-            style={{ cursor: 'grab', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,.15))' }}
+            cx={f(h.hx)} cy={f(h.hy)} r="5"
+            fill="white" stroke="#8892cc" strokeWidth="2"
+            style={{ cursor: 'grab', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,.2))' }}
             onMouseDown={e => onBoundaryDrag(e, h.id0, h.id1, svgRef)}
           />
         ))}
@@ -284,11 +289,15 @@ function VertBar({ tasks, totalWeight, onDragStart, onHover }) {
                 <span className="vbar-mm">{ratio.toFixed(2)}</span>
               </span>
             )}
-            {canDrag && (
+            {!isLast && (canDrag ? (
               <div className="vbar-handle" onMouseDown={e => onDragStart(e, task.id, tasks[i + 1].id, trackRef)}>
                 <div className="vbar-grip" />
               </div>
-            )}
+            ) : (
+              <div className="vbar-handle vbar-handle--locked">
+                <span className="vbar-grip-lock">🔒</span>
+              </div>
+            ))}
           </div>
         );
       })}

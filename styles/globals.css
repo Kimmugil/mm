@@ -390,6 +390,8 @@ body {
 }
 .vbar-handle:hover .vbar-grip  { background: #fff; transform: scaleY(1.5); width: 40px; }
 .vbar-handle:active .vbar-grip { background: #fff; transform: scaleY(2); }
+.vbar-handle--locked { cursor: default; }
+.vbar-grip-lock { font-size: 9px; opacity: 0.5; }
 
 /* ── Pie / donut ───────────────────────────────────── */
 .pie-wrap     { display: flex; flex-direction: column; align-items: center; }
