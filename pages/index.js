@@ -16,10 +16,8 @@ let _uid = Date.now();
 function uid() { return ++_uid; }
 
 function defaultTasks() {
-  const names = ['업무 항목 1','업무 항목 2','업무 항목 3','업무 항목 4','업무 항목 5',
-                 '업무 항목 6','업무 항목 7','업무 항목 8','업무 항목 9','업무 항목 10'];
-  return names.map((name, i) => ({
-    id: uid(), name, weight: i < 2 ? 1 : 0, locked: false,
+  return Array.from({ length: 10 }, (_, i) => ({
+    id: uid(), name: '', weight: i < 2 ? 1 : 0, locked: false,
   }));
 }
 
@@ -597,7 +595,7 @@ export default function MMPlanner() {
                         className="task-name-input"
                         value={task.name}
                         onChange={e => updateName(task.id, e.target.value)}
-                        placeholder={`항목 ${i + 1}`}
+                        placeholder="(클릭하여 입력)"
                       />
 
                       {editMm?.id === task.id ? (
@@ -637,13 +635,12 @@ export default function MMPlanner() {
                         </div>
                       )}
 
-                      <Tooltip text={task.locked ? '고정 해제' : '비율 고정'} dir="up" align="end">
+                      <Tooltip text={task.locked ? 'MM 비율이 고정되어 있습니다.\n드래그·균등배분으로 변경되지 않습니다.\n클릭하여 해제' : 'MM 비율 고정\n다른 항목 조정 시 이 항목은 변경되지 않습니다'} dir="up" align="end">
                         <button
                           className={`lock-btn${task.locked ? ' locked' : ''}`}
                           onClick={() => toggleLock(task.id)}
-                          aria-label={task.locked ? '고정 해제' : '고정'}
                         >
-                          {task.locked ? '🔒' : '🔓'}
+                          {task.locked ? '🔒 고정됨' : '고정'}
                         </button>
                       </Tooltip>
                       <button className="remove-btn" onClick={() => removeTask(task.id)}>×</button>

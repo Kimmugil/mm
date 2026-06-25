@@ -519,7 +519,7 @@ body {
   font-family: inherit;
   min-width: 0;
 }
-.task-name-input::placeholder { color: var(--subtle); font-weight: 400; }
+.task-name-input::placeholder { color: var(--accent-2); font-weight: 400; font-style: italic; }
 .task-name-input:focus {
   background: var(--accent-bg);
   border-radius: 5px;
@@ -588,19 +588,23 @@ body {
 .task-mini-fill { height: 100%; border-radius: 2px; transition: width .12s; }
 
 .lock-btn {
-  width: 26px; height: 26px;
-  border: none; background: none;
+  height: 26px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
   cursor: pointer;
-  font-size: 13px; line-height: 1;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--subtle);
   border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  opacity: 0.3;
-  transition: opacity .15s, background .15s;
-  padding: 0;
+  padding: 0 8px;
+  white-space: nowrap;
+  transition: all .15s;
 }
-.lock-btn:hover   { opacity: 0.8; background: var(--bg); }
-.lock-btn.locked  { opacity: 1; background: var(--accent-bg); }
+.lock-btn:hover  { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.lock-btn.locked { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); font-size: 11px; }
 
 .task-row.locked { background: #fafafe; }
 .task-row.locked .task-mm  { color: var(--accent); }
