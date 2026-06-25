@@ -43,26 +43,27 @@ function getWorkingDays(ym) {
 }
 
 // ── Tooltip ───────────────────────────────────────────
-function Tooltip({ text, children }) {
+// dir: 'up' | 'down' | 'left' | 'right'  (where the box appears relative to trigger)
+// align: 'center' | 'start' | 'end'
+function Tooltip({ text, children, dir = 'up', align = 'center' }) {
   return (
-    <span className="tt-wrap">
+    <span className={`tt tt--${dir} tt--${align}`} data-tip={text}>
       {children}
-      <span className="tt-box">{text}</span>
     </span>
   );
 }
-function Help({ text }) {
+function Help({ text, dir = 'up', align = 'center' }) {
   return (
-    <Tooltip text={text}>
+    <Tooltip text={text} dir={dir} align={align}>
       <span className="help-icon" aria-label="도움말">?</span>
     </Tooltip>
   );
 }
 
-// ── Donut (Pie) chart ─────────────────────────────────
+// ── Donut chart ───────────────────────────────────────
 function DonutChart({ tasks, totalWeight }) {
   const [hov, setHov] = useState(null);
-  const CX = 120, CY = 120, R = 105, IR = 60;
+  const CX = 130, CY = 130, R = 115, IR = 65;
   let angle = -Math.PI / 2;
 
   const slices = tasks.map((task, i) => {
@@ -71,53 +72,46 @@ function DonutChart({ tasks, totalWeight }) {
     const a0 = angle, a1 = angle + sweep;
     angle = a1;
     const lg = sweep > Math.PI ? 1 : 0;
-    const x1 = CX + R * Math.cos(a0),  y1 = CY + R * Math.sin(a0);
-    const x2 = CX + R * Math.cos(a1),  y2 = CY + R * Math.sin(a1);
-    const xi1 = CX + IR * Math.cos(a0), yi1 = CY + IR * Math.sin(a0);
-    const xi2 = CX + IR * Math.cos(a1), yi2 = CY + IR * Math.sin(a1);
-    const d = `M${f(x1)} ${f(y1)} A${R} ${R} 0 ${lg} 1 ${f(x2)} ${f(y2)} L${f(xi2)} ${f(yi2)} A${IR} ${IR} 0 ${lg} 0 ${f(xi1)} ${f(yi1)}Z`;
+    const p = (a, r) => [CX + r * Math.cos(a), CY + r * Math.sin(a)];
+    const [x1, y1] = p(a0, R), [x2, y2] = p(a1, R);
+    const [xi1, yi1] = p(a0, IR), [xi2, yi2] = p(a1, IR);
+    const d = `M${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${lg} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${xi2.toFixed(2)} ${yi2.toFixed(2)} A${IR} ${IR} 0 ${lg} 0 ${xi1.toFixed(2)} ${yi1.toFixed(2)}Z`;
     return { id: task.id, d, color: PALETTE[i % PALETTE.length], ratio, name: task.name || `항목 ${i + 1}` };
   });
 
-  const hSlice = hov != null ? slices.find(s => s.id === hov) : null;
+  const hs = hov != null ? slices.find(s => s.id === hov) : null;
 
   return (
     <div className="pie-wrap">
-      <svg viewBox="0 0 240 240" className="pie-svg">
+      <svg viewBox="0 0 260 260" className="pie-svg">
         {slices.map(s => (
           <path
-            key={s.id}
-            d={s.d}
-            fill={s.color}
-            stroke="#fff"
-            strokeWidth="1.5"
-            style={{ opacity: hov == null || hov === s.id ? 1 : 0.5, cursor: 'default', transition: 'opacity 0.15s' }}
+            key={s.id} d={s.d} fill={s.color} stroke="#fff" strokeWidth="1.5"
+            style={{ opacity: hov == null || hov === s.id ? 1 : 0.45, cursor: 'default', transition: 'opacity .15s' }}
             onMouseEnter={() => setHov(s.id)}
             onMouseLeave={() => setHov(null)}
           />
         ))}
         <circle cx={CX} cy={CY} r={IR - 1} fill="white" />
-        {hSlice ? (
+        {hs ? (
           <>
-            <text x={CX} y={CY - 7} textAnchor="middle" fontSize="17" fontWeight="700" fill="#1a1d23">{hSlice.ratio.toFixed(2)}</text>
-            <text x={CX} y={CY + 12} textAnchor="middle" fontSize="10.5" fill="#7a8494">{trunc(hSlice.name, 9)}</text>
+            <text x={CX} y={CY - 8} textAnchor="middle" fontSize="19" fontWeight="700" fill="#1a1d23">{hs.ratio.toFixed(2)}</text>
+            <text x={CX} y={CY + 13} textAnchor="middle" fontSize="11.5" fill="#7a8494">{hs.name.length > 10 ? hs.name.slice(0, 9) + '…' : hs.name}</text>
           </>
         ) : (
           <>
-            <text x={CX} y={CY - 7} textAnchor="middle" fontSize="18" fontWeight="700" fill="#1a1d23">1.00</text>
-            <text x={CX} y={CY + 12} textAnchor="middle" fontSize="11" fill="#7a8494">MM</text>
+            <text x={CX} y={CY - 8} textAnchor="middle" fontSize="22" fontWeight="700" fill="#1a1d23">1.00</text>
+            <text x={CX} y={CY + 13} textAnchor="middle" fontSize="12" fill="#7a8494">MM</text>
           </>
         )}
       </svg>
-      <div className="pie-hover-row" style={{ visibility: hSlice ? 'visible' : 'hidden' }}>
-        {hSlice && (
-          <>
-            <span className="color-dot" style={{ backgroundColor: hSlice.color }} />
-            <span>{hSlice.name}</span>
-            <strong>{hSlice.ratio.toFixed(2)} MM</strong>
-            <span className="muted">({(hSlice.ratio * 100).toFixed(1)}%)</span>
-          </>
-        )}
+      <div className="pie-info-row" style={{ visibility: hs ? 'visible' : 'hidden' }}>
+        {hs && <>
+          <span className="color-dot" style={{ backgroundColor: hs.color }} />
+          <span className="pie-name">{hs.name}</span>
+          <strong>{hs.ratio.toFixed(2)} MM</strong>
+          <span className="muted">({(hs.ratio * 100).toFixed(1)}%)</span>
+        </>}
         &nbsp;
       </div>
     </div>
@@ -131,10 +125,10 @@ function VertBar({ tasks, totalWeight, onDragStart }) {
     <div className="vbar-track" ref={trackRef}>
       {tasks.map((task, i) => {
         const ratio = totalWeight > 0 ? task.weight / totalWeight : 1 / tasks.length;
-        const pct = ratio * 100;
+        const pct   = ratio * 100;
         const isLast = i === tasks.length - 1;
-        const color = PALETTE[i % PALETTE.length];
-        const label = task.name || `항목 ${i + 1}`;
+        const color  = PALETTE[i % PALETTE.length];
+        const label  = task.name || `항목 ${i + 1}`;
         return (
           <div
             key={task.id}
@@ -144,7 +138,7 @@ function VertBar({ tasks, totalWeight, onDragStart }) {
           >
             {pct > 5 && (
               <span className="vbar-label">
-                {pct > 11 && <span className="vbar-name">{label}</span>}
+                {pct > 10 && <span className="vbar-name">{label}</span>}
                 <span className="vbar-mm">{ratio.toFixed(2)}</span>
               </span>
             )}
@@ -160,9 +154,6 @@ function VertBar({ tasks, totalWeight, onDragStart }) {
   );
 }
 
-function f(n) { return n.toFixed(2); }
-function trunc(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
-
 // ── Main ──────────────────────────────────────────────
 export default function MMPlanner() {
   const [tasks,      setTasks]      = useState([]);
@@ -171,18 +162,7 @@ export default function MMPlanner() {
   const [chartType,  setChartType]  = useState('bar');
   const [isDragging, setIsDragging] = useState(false);
   const [daysMode,   setDaysMode]   = useState(false);
-  const [guideText,  setGuideText]  = useState('');
 
-  // admin state
-  const [adminOpen,   setAdminOpen]   = useState(false);
-  const [adminAuthed, setAdminAuthed] = useState(false);
-  const [pwInput,     setPwInput]     = useState('');
-  const [pwError,     setPwError]     = useState('');
-  const [editGuide,   setEditGuide]   = useState('');
-  const [saving,      setSaving]      = useState(false);
-  const [savedOk,     setSavedOk]     = useState(false);
-
-  // init
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -201,20 +181,16 @@ export default function MMPlanner() {
   useEffect(() => { if (ready && month) localStorage.setItem(MONTH_KEY, month); }, [month, ready]);
   useEffect(() => { if (ready) localStorage.setItem(CHART_KEY, chartType); }, [chartType, ready]);
 
-  useEffect(() => {
-    fetch('/api/guide').then(r => r.json()).then(d => setGuideText(d.text || '')).catch(() => {});
-  }, []);
-
   const workingDays = getWorkingDays(month);
   const dayMM  = workingDays > 0 ? 1 / workingDays : 0;
   const hourMM = dayMM / 8;
   const totalWeight = tasks.reduce((s, t) => s + t.weight, 0);
   const mm = w => totalWeight > 0 ? w / totalWeight : 0;
 
-  function addTask()          { setTasks(p => [...p, { id: uid(), name: '', weight: 1, days: '' }]); }
-  function removeTask(id)     { setTasks(p => p.filter(t => t.id !== id)); }
-  function updateName(id, v)  { setTasks(p => p.map(t => t.id === id ? { ...t, name: v } : t)); }
-  function equalizeAll()      { setTasks(p => p.map(t => ({ ...t, weight: 1, days: '' }))); }
+  function addTask()         { setTasks(p => [...p, { id: uid(), name: '', weight: 1, days: '' }]); }
+  function removeTask(id)    { setTasks(p => p.filter(t => t.id !== id)); }
+  function updateName(id, v) { setTasks(p => p.map(t => t.id === id ? { ...t, name: v } : t)); }
+  function equalizeAll()     { setTasks(p => p.map(t => ({ ...t, weight: 1, days: '' }))); }
 
   function updateDays(id, val) {
     const n = parseFloat(val);
@@ -231,17 +207,17 @@ export default function MMPlanner() {
 
   const handleVDrag = useCallback((e, idx, trackRef) => {
     e.preventDefault();
-    const rect = trackRef.current.getBoundingClientRect();
+    const rect   = trackRef.current.getBoundingClientRect();
     const startY = e.clientY;
-    const sw = tasks.map(t => t.weight);
-    const total = sw.reduce((s, w) => s + w, 0);
-    const minW = total * MIN_RATIO;
+    const sw     = tasks.map(t => t.weight);
+    const total  = sw.reduce((s, w) => s + w, 0);
+    const minW   = total * MIN_RATIO;
     setIsDragging(true);
 
     const onMove = ev => {
-      const dw = ((ev.clientY - startY) / rect.height) * total;
+      const dw   = ((ev.clientY - startY) / rect.height) * total;
       const pair = sw[idx] + sw[idx + 1];
-      const w0 = clamp(sw[idx] + dw, minW, pair - minW);
+      const w0   = clamp(sw[idx] + dw, minW, pair - minW);
       setTasks(p => p.map((t, i) => {
         if (i === idx)     return { ...t, weight: w0,        days: '' };
         if (i === idx + 1) return { ...t, weight: pair - w0, days: '' };
@@ -257,43 +233,11 @@ export default function MMPlanner() {
     window.addEventListener('mouseup',   onUp);
   }, [tasks]);
 
-  async function submitPw() {
-    setPwError('');
-    try {
-      const res = await fetch('/api/guide', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pwInput }),
-      });
-      const d = await res.json();
-      if (res.ok && d.authenticated) { setAdminAuthed(true); setEditGuide(guideText); }
-      else setPwError(d.error || '오류가 발생했습니다.');
-    } catch { setPwError('서버에 연결할 수 없습니다.'); }
-  }
-
-  async function saveGuide() {
-    setSaving(true); setPwError('');
-    try {
-      const res = await fetch('/api/guide', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pwInput, text: editGuide }),
-      });
-      const d = await res.json();
-      if (res.ok) {
-        setGuideText(editGuide);
-        setSavedOk(true);
-        setTimeout(() => setSavedOk(false), 2500);
-      } else { setPwError(d.error || '저장에 실패했습니다.'); }
-    } catch { setPwError('서버에 연결할 수 없습니다.'); }
-    setSaving(false);
-  }
-
   if (!ready) return null;
 
   const totalDays  = tasks.reduce((s, t) => { const n = parseFloat(t.days); return s + (isNaN(n) ? 0 : n); }, 0);
   const hasDays    = tasks.some(t => t.days !== '' && !isNaN(parseFloat(t.days)));
-  const overBudget = totalDays > workingDays && workingDays > 0;
+  const overBudget = workingDays > 0 && totalDays > workingDays;
 
   return (
     <>
@@ -313,40 +257,33 @@ export default function MMPlanner() {
               <h1>MM Planner</h1>
               <p className="header-sub">업무별 월간 공수(MM) 배분 도구 · 총합 1.00 MM</p>
             </div>
-            <Tooltip text={`배분 기준이 되는 연월을 선택하세요.\n선택한 달의 평일 수에 따라 하루/시간 단위 MM 기준값이 자동으로 계산됩니다.`}>
-              <div className="month-picker">
-                <label>기준 월</label>
-                <input type="month" value={month} onChange={e => setMonth(e.target.value)} />
-              </div>
-            </Tooltip>
+            <div className="month-picker">
+              <label>기준 월</label>
+              <input type="month" value={month} onChange={e => setMonth(e.target.value)} />
+            </div>
           </div>
 
           {workingDays > 0 && (
             <div className="wd-row">
-              <Tooltip text={`${formatMonth(month)}의 토·일을 제외한 평일 수입니다.\n공휴일은 자동으로 빠지지 않으므로 실제 근무 달력에 따라 조정이 필요할 수 있습니다.`}>
+              <Tooltip text={`${formatMonth(month)}의 토·일 제외 평일 수\n공휴일은 자동 제외되지 않습니다`} dir="down" align="start">
                 <span className="wd-pill">업무일 <strong>{workingDays}일</strong></span>
               </Tooltip>
-              <Tooltip text={`1 ÷ ${workingDays}일 = ${dayMM.toFixed(6)}\n1일(8시간) 근무를 기준으로 한 참고 수치입니다.\n실제 MM 배분은 업무 비중을 직접 조정하세요.`}>
+              <Tooltip text={`1 ÷ ${workingDays} = ${dayMM.toFixed(6)}\n하루 8시간 근무 기준 참고값`} dir="down" align="start">
                 <span className="wd-pill">1일 <strong>{dayMM.toFixed(4)} MM</strong></span>
               </Tooltip>
-              <Tooltip text={`${dayMM.toFixed(6)} ÷ 8시간 = ${hourMM.toFixed(6)}\n1시간 단위의 참고 수치입니다.`}>
+              <Tooltip text={`${dayMM.toFixed(6)} ÷ 8 = ${hourMM.toFixed(6)}\n1시간 단위 참고값`} dir="down" align="start">
                 <span className="wd-pill">1시간 <strong>{hourMM.toFixed(5)} MM</strong></span>
               </Tooltip>
-              <Tooltip text={`1일 MM × 5일(1주) = ${(dayMM * 5).toFixed(4)}\n5일 근무 기준 참고 수치입니다.`}>
+              <Tooltip text={`1일 MM × 5 = ${(dayMM * 5).toFixed(4)}\n1주(5일) 기준 참고값`} dir="down" align="start">
                 <span className="wd-pill">1주(5일) <strong>{(dayMM * 5).toFixed(4)} MM</strong></span>
               </Tooltip>
-              <Help text={`위 수치는 ${formatMonth(month)} 평일 기준으로 계산된 참고값입니다.\n\n실제 MM 배분은 업무의 비중·난이도·집중도를 함께 고려해 왼쪽 차트를 직접 드래그하거나 일수를 입력해 조정하세요.\n\n⚠️ 여러 업무가 있을 때 각 업무에 투입한 일수의 비율로 1.00 MM을 나눠 갖는 구조입니다.`} />
+              <Help
+                text={`위 수치는 ${formatMonth(month)} 평일 기준 참고값입니다.\n실제 배분은 업무 비중·난이도를 고려해 직접 조정하세요.\n일수 비율로 1.00 MM을 나눠 갖는 구조입니다.`}
+                dir="down" align="end"
+              />
             </div>
           )}
         </div>
-
-        {/* ── Guide text (admin-editable) ── */}
-        {guideText && (
-          <div className="guide-box">
-            <span className="guide-icon">📌</span>
-            <pre className="guide-text">{guideText}</pre>
-          </div>
-        )}
 
         {/* ── Main 2-col grid ── */}
         {tasks.length === 0 ? (
@@ -361,26 +298,18 @@ export default function MMPlanner() {
             {/* Left: Chart */}
             <div className="chart-panel">
               <div className="chart-toggle-row">
-                <Tooltip text="세로 막대 차트입니다. 구분선을 위아래로 드래그해 비율을 조정하세요.">
-                  <button
-                    className={`chart-tab${chartType === 'bar' ? ' active' : ''}`}
-                    onClick={() => setChartType('bar')}
-                  >막대</button>
+                <Tooltip text="세로 막대 차트\n구분선을 드래그해 비율 조정" dir="down">
+                  <button className={`chart-tab${chartType === 'bar' ? ' active' : ''}`} onClick={() => setChartType('bar')}>막대</button>
                 </Tooltip>
-                <Tooltip text="원형(도넛) 차트입니다. 각 항목에 마우스를 올리면 상세 수치를 확인할 수 있습니다.">
-                  <button
-                    className={`chart-tab${chartType === 'pie' ? ' active' : ''}`}
-                    onClick={() => setChartType('pie')}
-                  >원형</button>
+                <Tooltip text="원형 도넛 차트\n각 항목에 마우스를 올리면 수치 확인" dir="down">
+                  <button className={`chart-tab${chartType === 'pie' ? ' active' : ''}`} onClick={() => setChartType('pie')}>원형</button>
                 </Tooltip>
               </div>
 
               {chartType === 'bar' ? (
                 <>
                   <VertBar tasks={tasks} totalWeight={totalWeight} onDragStart={handleVDrag} />
-                  {tasks.length > 1 && (
-                    <p className="chart-hint">↕ 구분선을 드래그해 비율 조정</p>
-                  )}
+                  {tasks.length > 1 && <p className="chart-hint">↕ 구분선을 드래그해 비율 조정</p>}
                 </>
               ) : (
                 <DonutChart tasks={tasks} totalWeight={totalWeight} />
@@ -393,16 +322,14 @@ export default function MMPlanner() {
                 <div className="card-header">
                   <span>
                     업무 목록
-                    <Help text="업무 이름을 클릭하면 바로 편집할 수 있습니다. × 버튼으로 항목을 삭제하세요." />
+                    <Help text="항목 이름 클릭해 편집\n× 버튼으로 삭제" dir="down" align="start" />
                   </span>
                   <div className="card-header-right">
-                    <Tooltip text="모든 항목을 동일한 비율로 초기화합니다.">
+                    <Tooltip text="모든 항목을 동일 비율로 초기화" dir="down" align="end">
                       <button className="equalize-btn" onClick={equalizeAll}>균등 배분</button>
                     </Tooltip>
-                    <Tooltip text="각 업무에 소요 일수를 입력하면 해당 달 업무일수 기준으로 MM 비율을 자동 계산합니다.">
-                      <button className={`mode-btn${daysMode ? ' active' : ''}`} onClick={() => setDaysMode(v => !v)}>
-                        일수 입력
-                      </button>
+                    <Tooltip text="소요 일수 입력 → MM 자동 계산\n'적용' 버튼으로 차트에 반영" dir="down" align="end">
+                      <button className={`mode-btn${daysMode ? ' active' : ''}`} onClick={() => setDaysMode(v => !v)}>일수 입력</button>
                     </Tooltip>
                   </div>
                 </div>
@@ -413,7 +340,10 @@ export default function MMPlanner() {
                       {formatMonth(month)} 업무일 <strong>{workingDays}일</strong>
                       &nbsp;·&nbsp;1일 = <strong>{dayMM.toFixed(4)} MM</strong>
                     </span>
-                    <Help text={`소요 일수를 입력하면 '${formatMonth(month)} 업무일 ${workingDays}일 기준'으로 MM을 계산해 미리 보여줍니다.\n'비율 적용' 버튼을 눌러야 차트에 반영됩니다.\n\n일수 합계가 ${workingDays}일을 초과해도 비율만 반영되며 총합은 항상 1.00 MM을 유지합니다.`} />
+                    <Help
+                      text={`일수 입력 시 ${workingDays}일 기준으로 MM 계산\n합계가 ${workingDays}일 초과해도 비율만 반영, 총합은 1.00 유지`}
+                      dir="up" align="end"
+                    />
                   </div>
                 )}
 
@@ -466,11 +396,10 @@ export default function MMPlanner() {
                   <div className="days-summary">
                     <span>
                       입력 합계 <strong>{totalDays}</strong>일 / {workingDays}일
-                      {overBudget && <span className="days-over"> (업무일 초과)</span>}
+                      {overBudget && <span className="days-over"> 초과</span>}
                     </span>
                     <span className="days-sum-mm">
-                      MM 합계 기준: <strong>{(totalDays / workingDays).toFixed(4)}</strong>
-                      <Help text="비율 적용 시 입력된 일수의 비율만 사용되며 총합은 1.00 MM으로 유지됩니다." />
+                      기준 MM 합: <strong>{(totalDays / workingDays).toFixed(4)}</strong>
                     </span>
                   </div>
                 )}
@@ -480,9 +409,7 @@ export default function MMPlanner() {
                 <button className="add-btn" onClick={addTask}>+ 업무 추가</button>
                 <div className="footer-right">
                   {daysMode && hasDays && (
-                    <Tooltip text="입력한 일수 비율을 차트에 반영합니다. 총합은 1.00 MM으로 유지됩니다.">
-                      <button className="apply-btn" onClick={applyDays}>일수 기준 적용 →</button>
-                    </Tooltip>
+                    <button className="apply-btn" onClick={applyDays}>일수 기준 적용 →</button>
                   )}
                   <div className="total-badge">
                     합계 <strong>{tasks.length > 0 ? '1.00' : '0.00'}</strong> MM
@@ -492,59 +419,6 @@ export default function MMPlanner() {
             </div>
           </div>
         )}
-
-        {/* ── Admin: guide text editor ── */}
-        <div className="admin-section">
-          <button className="admin-toggle" onClick={() => setAdminOpen(v => !v)}>
-            <span>{adminAuthed ? '🔓' : '🔒'}</span>
-            안내 텍스트 관리
-            <span className="chevron">{adminOpen ? '▲' : '▼'}</span>
-          </button>
-
-          {adminOpen && (
-            <div className="admin-body">
-              {!adminAuthed ? (
-                <div className="pw-form">
-                  <p className="pw-desc">관리자 비밀번호를 입력하면 페이지 상단에 표시되는 안내 텍스트를 수정할 수 있습니다.</p>
-                  <div className="pw-row">
-                    <input
-                      type="password"
-                      className={`pw-input${pwError ? ' error' : ''}`}
-                      value={pwInput}
-                      onChange={e => { setPwInput(e.target.value); setPwError(''); }}
-                      onKeyDown={e => e.key === 'Enter' && submitPw()}
-                      placeholder="비밀번호"
-                      autoFocus
-                    />
-                    <button className="pw-btn" onClick={submitPw}>확인</button>
-                  </div>
-                  {pwError && <p className="pw-error">{pwError}</p>}
-                </div>
-              ) : (
-                <div className="guide-edit">
-                  <p className="guide-edit-desc">
-                    아래 내용은 페이지 상단에 <strong>모든 사용자에게</strong> 표시됩니다.
-                    비워두면 안내 박스가 숨겨집니다.
-                  </p>
-                  <textarea
-                    className="guide-textarea"
-                    value={editGuide}
-                    onChange={e => setEditGuide(e.target.value)}
-                    rows={5}
-                    placeholder="공지사항, 작성 지침, 주의사항 등을 입력하세요..."
-                  />
-                  <div className="guide-edit-footer">
-                    <button className="save-btn" onClick={saveGuide} disabled={saving}>
-                      {saving ? '저장 중…' : savedOk ? '✓ 저장됨' : '저장'}
-                    </button>
-                    {pwError && <span className="pw-error">{pwError}</span>}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
       </div>
     </>
   );
