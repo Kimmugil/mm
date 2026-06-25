@@ -496,6 +496,21 @@ export default function MMPlanner() {
   const chartTasksPie = [...activeTasks].sort((a, b) => (a.locked ? 1 : 0) - (b.locked ? 1 : 0));
   const chartTasks    = activeTasks;
 
+  // Largest-remainder method: displayed MM values sum to exactly 1.00
+  const mmDisplay = (() => {
+    if (totalWeight === 0 || activeTasks.length === 0) return {};
+    const ratios  = activeTasks.map(t => t.weight / totalWeight);
+    const floored = ratios.map(r => Math.floor(r * 100) / 100);
+    const extra   = Math.round((1 - floored.reduce((s, v) => s + v, 0)) * 100);
+    const order   = ratios.map((r, i) => ({ i, rem: r - floored[i] }))
+                          .sort((a, b) => b.rem - a.rem);
+    const result  = [...floored];
+    for (let k = 0; k < extra && k < order.length; k++) result[order[k].i] += 0.01;
+    const map = {};
+    activeTasks.forEach((t, idx) => { map[t.id] = result[idx]; });
+    return map;
+  })();
+
   return (
     <>
       <Head>
@@ -602,14 +617,14 @@ export default function MMPlanner() {
               {(() => {
                 const ht = hoveredTaskId ? tasks.find(t => t.id === hoveredTaskId) : null;
                 if (!ht) return <div className="chart-hover-bar chart-hover-bar--empty">&nbsp;</div>;
-                const ratio   = mm(ht.weight);
-                const daysVal = workingDays > 0 ? ratio * workingDays : null;
+                const htDisp   = mmDisplay[ht.id] ?? mm(ht.weight);
+                const daysVal  = workingDays > 0 ? htDisp * workingDays : null;
                 const hoursVal = daysVal != null ? daysVal * 8 : null;
                 return (
                   <div className="chart-hover-bar">
                     <span className="color-dot" style={{ backgroundColor: PALETTE[ht.colorIdx] }} />
                     <span className="chart-hover-name">{ht.name || '(이름 없음)'}</span>
-                    <strong className="chart-hover-mm">{ratio.toFixed(2)} MM</strong>
+                    <strong className="chart-hover-mm">{htDisp.toFixed(2)} MM</strong>
                     {daysVal != null && (
                       <span className="chart-hover-days">≈ {daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h</span>
                     )}
@@ -633,10 +648,11 @@ export default function MMPlanner() {
                 </div>
 
                 {tasks.map((task, i) => {
-                  const ratio   = mm(task.weight);
-                  const pct     = ratio * 100;
-                  const isZero  = task.weight === 0;
-                  const daysVal = workingDays > 0 ? ratio * workingDays : null;
+                  const ratio    = mm(task.weight);
+                  const dispMM   = mmDisplay[task.id] ?? ratio;
+                  const pct      = ratio * 100;
+                  const isZero   = task.weight === 0;
+                  const daysVal  = workingDays > 0 ? dispMM * workingDays : null;
                   const hoursVal = daysVal != null ? daysVal * 8 : null;
 
                   return (
@@ -670,7 +686,7 @@ export default function MMPlanner() {
                             onClick={() => startEditMm(task.id, ratio)}
                             title="클릭해서 MM 직접 입력"
                           >
-                            <span className={`task-mm${isZero ? ' zero-mm' : ''}`}>{ratio.toFixed(2)}</span>
+                            <span className={`task-mm${isZero ? ' zero-mm' : ''}`}>{isZero ? '0.00' : dispMM.toFixed(2)}</span>
                             {!isZero && <span className="task-pct">{pct.toFixed(1)}%</span>}
                           </div>
                           {!isZero && daysVal != null && (
