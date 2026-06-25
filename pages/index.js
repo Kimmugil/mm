@@ -72,7 +72,7 @@ function GuideModal({ onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>MM Planner 사용법</h2>
+          <h2>너의MM은 사용법</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
@@ -410,7 +410,7 @@ export default function MMPlanner() {
   return (
     <>
       <Head>
-        <title>MM Planner</title>
+        <title>너의MM은</title>
         <link rel="icon" href="/icon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
@@ -424,8 +424,8 @@ export default function MMPlanner() {
         <div className="header">
           <div className="header-top">
             <div>
-              <h1>MM Planner</h1>
-              <p className="header-sub">업무별 월간 공수(MM) 배분 도구 · 총합 1.00 MM</p>
+              <h1>너의MM은</h1>
+              <p className="header-sub">월간 공수(MM) 배분 도구 · 총합 1.00 MM</p>
             </div>
             <div className="header-right">
               <button className="guide-btn" onClick={() => setShowGuide(true)}>사용법</button>
