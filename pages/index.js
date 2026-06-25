@@ -137,7 +137,10 @@ function GuideModal({ onClose }) {
 }
 
 // ── Donut chart ───────────────────────────────────────
-const PIE_CX = 130, PIE_CY = 130, PIE_R = 78, PIE_IR = 42;
+const VB_W = 360, VB_H = 280;
+const PIE_CX = 180, PIE_CY = 140, PIE_R = 72, PIE_IR = 38;
+const R_ELBOW = PIE_R + 16;   // leader line elbow radius
+const H_LEN   = 22;            // horizontal segment length
 
 function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
   const [hov, setHov] = useState(null);
@@ -160,7 +163,17 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
     const [xi1, yi1] = pt(a0, PIE_IR), [xi2, yi2] = pt(a1, PIE_IR);
     const d = `M${f(x1)} ${f(y1)} A${PIE_R} ${PIE_R} 0 ${lg} 1 ${f(x2)} ${f(y2)} L${f(xi2)} ${f(yi2)} A${PIE_IR} ${PIE_IR} 0 ${lg} 0 ${f(xi1)} ${f(yi1)}Z`;
 
-    slices.push({ id: task.id, d, color: PALETTE[task.colorIdx], ratio, name: task.name || `항목`, midA, locked: task.locked });
+    // Leader line points
+    const [lx0, ly0] = pt(midA, PIE_R);        // on pie outer edge
+    const [ex, ey]   = pt(midA, R_ELBOW);      // elbow
+    const isRight    = Math.cos(midA) >= 0;
+    const lx1        = ex + (isRight ? H_LEN : -H_LEN);  // label anchor x
+
+    slices.push({
+      id: task.id, d, color: PALETTE[task.colorIdx], ratio,
+      name: task.name || '항목', midA, locked: task.locked,
+      leader: { lx0, ly0, ex, ey, lx1, ly: ey, isRight },
+    });
 
     if (i < tasks.length - 1) {
       const [hx, hy] = pt(a1, PIE_R);
@@ -170,56 +183,63 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
   });
 
   const hs = hov != null ? slices.find(s => s.id === hov) : null;
-  const MID_R = (PIE_R + PIE_IR) / 2;
 
   return (
     <div className="pie-wrap">
-      <svg ref={svgRef} viewBox="0 0 260 260" className="pie-svg">
+      <svg ref={svgRef} viewBox={`0 0 ${VB_W} ${VB_H}`} className="pie-svg">
+        {/* Slices */}
         {slices.map(s => (
           <path
             key={s.id} d={s.d} fill={s.color} stroke="#fff" strokeWidth="1.5"
-            style={{ opacity: hov == null || hov === s.id ? (s.locked ? 0.65 : 1) : 0.45, cursor: 'default', transition: 'opacity .15s' }}
+            style={{ opacity: hov == null || hov === s.id ? (s.locked ? 0.65 : 1) : 0.35, cursor: 'default', transition: 'opacity .15s' }}
             onMouseEnter={() => setHov(s.id)}
             onMouseLeave={() => setHov(null)}
           />
         ))}
 
+        {/* Center hole */}
         <circle cx={PIE_CX} cy={PIE_CY} r={PIE_IR - 1} fill="white" />
 
+        {/* Center text */}
+        {hs ? (
+          <>
+            <text x={PIE_CX} y={PIE_CY - 7} textAnchor="middle" fontSize="16" fontWeight="700" fill="#1a1d23">{hs.ratio.toFixed(2)}</text>
+            <text x={PIE_CX} y={PIE_CY + 10} textAnchor="middle" fontSize="9.5" fill="#7a8494">{trunc(hs.name, 8)}</text>
+          </>
+        ) : (
+          <>
+            <text x={PIE_CX} y={PIE_CY - 7} textAnchor="middle" fontSize="18" fontWeight="700" fill="#1a1d23">1.00</text>
+            <text x={PIE_CX} y={PIE_CY + 10} textAnchor="middle" fontSize="10" fill="#7a8494">MM</text>
+          </>
+        )}
+
+        {/* Leader lines + outside labels */}
         {slices.map(s => {
-          const lx = PIE_CX + MID_R * Math.cos(s.midA);
-          const ly = PIE_CY + MID_R * Math.sin(s.midA);
-          const showName = s.ratio > 0.13;
-          const showMM   = s.ratio > 0.06;
-          if (!showMM) return null;
+          if (s.ratio < 0.03) return null; // skip tiny slices
+          const { lx0, ly0, ex, ey, lx1, ly, isRight } = s.leader;
+          const anchor = isRight ? 'start' : 'end';
+          const tx = lx1 + (isRight ? 4 : -4);
+          const isHov = hov === s.id;
           return (
-            <g key={s.id + '-lbl'} style={{ pointerEvents: 'none' }}>
-              {showName && (
-                <text x={f(lx)} y={f(ly - 7)} textAnchor="middle" fontSize="9" fontWeight="600"
-                  fill="rgba(255,255,255,.9)" dominantBaseline="middle">
-                  {trunc(s.name, 6)}
-                </text>
-              )}
-              <text x={f(lx)} y={f(showName ? ly + 5 : ly)} textAnchor="middle" fontSize="11" fontWeight="700"
-                fill="rgba(255,255,255,.97)" dominantBaseline="middle">
+            <g key={s.id + '-lbl'} style={{ pointerEvents: 'none' }} opacity={hov == null || isHov ? 1 : 0.4}>
+              {/* Diagonal + horizontal line */}
+              <polyline
+                points={`${f(lx0)},${f(ly0)} ${f(ex)},${f(ey)} ${f(lx1)},${f(ly)}`}
+                fill="none" stroke={s.color} strokeWidth="1" opacity="0.7"
+              />
+              {/* Ratio (prominent) */}
+              <text x={f(tx)} y={f(ly - 1)} textAnchor={anchor} fontSize="12" fontWeight="800" fill="#1a1d23" dominantBaseline="auto">
                 {s.ratio.toFixed(2)}
+              </text>
+              {/* Name (small, muted) */}
+              <text x={f(tx)} y={f(ly + 11)} textAnchor={anchor} fontSize="9" fill="#7a8494" dominantBaseline="auto">
+                {trunc(s.name, 8)}
               </text>
             </g>
           );
         })}
 
-        {hs ? (
-          <>
-            <text x={PIE_CX} y={PIE_CY - 8} textAnchor="middle" fontSize="18" fontWeight="700" fill="#1a1d23">{hs.ratio.toFixed(2)}</text>
-            <text x={PIE_CX} y={PIE_CY + 11} textAnchor="middle" fontSize="10.5" fill="#7a8494">{trunc(hs.name, 10)}</text>
-          </>
-        ) : (
-          <>
-            <text x={PIE_CX} y={PIE_CY - 8} textAnchor="middle" fontSize="20" fontWeight="700" fill="#1a1d23">1.00</text>
-            <text x={PIE_CX} y={PIE_CY + 11} textAnchor="middle" fontSize="11" fill="#7a8494">MM</text>
-          </>
-        )}
-
+        {/* Drag handles */}
         {tasks.length > 1 && handles.map(h => h.isLocked ? null : (
           <circle
             key={`h-${h.id0}`}
@@ -230,17 +250,6 @@ function DonutChart({ tasks, totalWeight, onBoundaryDrag }) {
           />
         ))}
       </svg>
-
-      <div className="pie-info-row" style={{ visibility: hs ? 'visible' : 'hidden' }}>
-        {hs && <>
-          <span className="color-dot" style={{ backgroundColor: hs.color }} />
-          <span className="pie-name">{hs.name}</span>
-          <strong>{hs.ratio.toFixed(2)} MM</strong>
-          <span className="muted">({(hs.ratio * 100).toFixed(1)}%)</span>
-          {hs.locked && <span className="lock-badge">고정됨</span>}
-        </>}
-        &nbsp;
-      </div>
     </div>
   );
 }
@@ -426,8 +435,8 @@ export default function MMPlanner() {
     e.stopPropagation();
     const svg     = svgRef.current;
     const svgRect = svg.getBoundingClientRect();
-    const scaleX  = 260 / svgRect.width;
-    const scaleY  = 260 / svgRect.height;
+    const scaleX  = VB_W / svgRect.width;
+    const scaleY  = VB_H / svgRect.height;
     const getAngle = (cx, cy) => {
       const x = (cx - svgRect.left) * scaleX - PIE_CX;
       const y = (cy - svgRect.top)  * scaleY - PIE_CY;
