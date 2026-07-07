@@ -45,10 +45,10 @@ body {
 .page {
   max-width: 960px;
   margin: 0 auto;
-  padding: 20px 12px 40px;
+  padding: 16px 4px 32px;
 }
 @media (max-width: 720px) {
-  .page { padding: 14px 8px 40px; }
+  .page { padding: 10px 0 32px; }
 }
 
 /* ── Tooltip ───────────────────────────────────────── */
@@ -300,25 +300,36 @@ body {
 
 /* ── Chart hover info bar ──────────────────────────── */
 .chart-hover-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  row-gap: 2px;
   padding: 9px 12px;
   background: var(--bg);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 12px;
-  min-height: 40px;
   transition: opacity .15s;
-  flex-wrap: wrap;
+  align-items: center;
 }
 .chart-hover-bar--empty {
   border-color: transparent;
   background: transparent;
+  min-height: 56px;
 }
-.chart-hover-name { flex: 1; color: var(--text); font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chart-hover-mm   { color: var(--accent); font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; flex-shrink: 0; }
-.chart-hover-days { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.chart-hover-bar .color-dot { grid-row: 1; grid-column: 1; }
+.chart-hover-name {
+  grid-row: 1; grid-column: 2;
+  color: var(--text); font-weight: 600; font-size: 12.5px;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.chart-hover-stats {
+  grid-row: 2; grid-column: 2;
+  display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+}
+.chart-hover-mm   { color: var(--accent); font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.chart-hover-days { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 
 .chart-guide-text {
   font-size: 11.5px;

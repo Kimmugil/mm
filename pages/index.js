@@ -495,9 +495,11 @@ export default function MMPlanner() {
                   <div className="chart-hover-bar">
                     <span className="color-dot" style={{ backgroundColor: PALETTE[ht.colorIdx] }} />
                     <span className="chart-hover-name">{ht.name || '(이름 없음)'}</span>
-                    <strong className="chart-hover-mm">{htDisp.toFixed(2)} MM</strong>
-                    {daysVal != null && <span className="chart-hover-days">{daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h</span>}
-                    {ht.locked && <span className="lock-badge">고정됨</span>}
+                    <div className="chart-hover-stats">
+                      <strong className="chart-hover-mm">{htDisp.toFixed(2)} MM</strong>
+                      {daysVal != null && <span className="chart-hover-days">{daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h</span>}
+                      {ht.locked && <span className="lock-badge">고정됨</span>}
+                    </div>
                   </div>
                 );
               })()}
