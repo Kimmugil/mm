@@ -534,7 +534,7 @@ export default function MMPlanner() {
               const dispMM   = mmDisplay[task.id] ?? ratio;
               const pct      = ratio * 100;
               const isZero   = task.weight === 0;
-              const daysVal  = workingDays > 0 ? dispMM * workingDays : null;
+              const daysVal  = workingDays > 0 ? ratio * workingDays : null;
               const hoursVal = daysVal != null ? daysVal * 8 : null;
 
               return (
