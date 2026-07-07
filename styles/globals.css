@@ -494,7 +494,9 @@ body {
 .lock-btn:hover  { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 .lock-btn.locked { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); font-size: 11px; }
 
-.task-row.locked { background: #fafafe; }
+.task-row.hovered { background: #f0f0ff; }
+.task-row.locked  { background: #fafafe; }
+.task-row.hovered.locked { background: #eaeaff; }
 .task-row.locked .task-mm  { color: var(--accent); }
 .task-row.locked .task-name-input { color: var(--muted); }
 

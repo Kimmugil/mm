@@ -525,7 +525,7 @@ export default function MMPlanner() {
               const hoursVal = daysVal != null ? daysVal * 8 : null;
 
               return (
-                <div key={task.id} className={`task-row${task.locked ? ' locked' : ''}${isZero ? ' zero' : ''}`}>
+                <div key={task.id} className={`task-row${task.locked ? ' locked' : ''}${isZero ? ' zero' : ''}${hoveredTaskId === task.id ? ' hovered' : ''}`}>
                   <div className="task-row-top">
                     <div className="color-dot" style={{ backgroundColor: PALETTE[task.colorIdx ?? i], opacity: isZero ? 0.3 : 1 }} />
                     <input
