@@ -366,6 +366,23 @@ export default function MMPlanner() {
   function updateName(id, v) { setTasks(p => p.map(t => t.id === id ? { ...t, name: v } : t)); }
   function toggleLock(id)    { setTasks(p => p.map(t => t.id === id ? { ...t, locked: !t.locked } : t)); }
 
+  function activateTask(id) {
+    setTasks(p => {
+      const total = p.reduce((s, t) => s + t.weight, 0);
+      const lockedRatioSum = p.filter(t => t.locked && t.weight > 0)
+        .reduce((s, t) => s + (total > 0 ? t.weight / total : 0), 0);
+      const unlockedActive = p.filter(t => !t.locked && t.weight > 0);
+      const count = unlockedActive.length + 1;
+      const each = Math.max((1 - lockedRatioSum) / count, 0.001);
+      return p.map(t => {
+        if (t.id === id) return { ...t, weight: each };
+        if (t.locked) return { ...t, weight: total > 0 ? t.weight / total : t.weight };
+        if (t.weight === 0) return t;
+        return { ...t, weight: each };
+      });
+    });
+  }
+
   function equalizeAll() {
     setTasks(p => {
       const total = p.reduce((s, t) => s + t.weight, 0);
@@ -659,30 +676,36 @@ export default function MMPlanner() {
 
                   return (
                     <div key={task.id} className={`task-row${task.locked ? ' locked' : ''}${isZero ? ' zero' : ''}`}>
-                      <div className="color-dot" style={{ backgroundColor: PALETTE[task.colorIdx ?? i], opacity: isZero ? 0.3 : 1 }} />
-                      <input
-                        className="task-name-input"
-                        value={task.name}
-                        onChange={e => updateName(task.id, e.target.value)}
-                        placeholder="(클릭하여 입력)"
-                      />
-
-                      {editMm?.id === task.id ? (
+                      {/* 1행: 색상 점 + 이름 + 삭제 */}
+                      <div className="task-row-top">
+                        <div className="color-dot" style={{ backgroundColor: PALETTE[task.colorIdx ?? i], opacity: isZero ? 0.3 : 1 }} />
                         <input
-                          type="number"
-                          className="mm-direct-input"
-                          value={editMm.val}
-                          min="0" max="0.99" step="0.01"
-                          autoFocus
-                          onChange={e => setEditMm({ id: task.id, val: e.target.value })}
-                          onBlur={() => commitEditMm(task.id)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') commitEditMm(task.id);
-                            if (e.key === 'Escape') setEditMm(null);
-                          }}
+                          className="task-name-input"
+                          value={task.name}
+                          onChange={e => updateName(task.id, e.target.value)}
+                          onBlur={e => { if (isZero && e.target.value.trim()) activateTask(task.id); }}
+                          placeholder="(클릭하여 입력)"
                         />
-                      ) : (
-                        <div className="task-right">
+                        <button className="remove-btn" onClick={() => removeTask(task.id)}>×</button>
+                      </div>
+
+                      {/* 2행: MM 수치 + 일수 힌트 + 잠금 */}
+                      <div className="task-row-bottom">
+                        {editMm?.id === task.id ? (
+                          <input
+                            type="number"
+                            className="mm-direct-input"
+                            value={editMm.val}
+                            min="0" max="0.99" step="0.01"
+                            autoFocus
+                            onChange={e => setEditMm({ id: task.id, val: e.target.value })}
+                            onBlur={() => commitEditMm(task.id)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') commitEditMm(task.id);
+                              if (e.key === 'Escape') setEditMm(null);
+                            }}
+                          />
+                        ) : (
                           <div
                             className="task-stats"
                             onClick={() => startEditMm(task.id, ratio)}
@@ -691,30 +714,27 @@ export default function MMPlanner() {
                             <span className={`task-mm${isZero ? ' zero-mm' : ''}`}>{isZero ? '0.00' : dispMM.toFixed(2)}</span>
                             {!isZero && <span className="task-pct">{pct.toFixed(1)}%</span>}
                           </div>
-                          {!isZero && daysVal != null && (
-                            <span className="task-day-hint">
-                              ≈ {daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h
-                            </span>
-                          )}
-                          {!isZero && (
-                            <div className="task-mini-bar">
-                              <div className="task-mini-fill" style={{ width: `${pct}%`, backgroundColor: PALETTE[task.colorIdx ?? i] }} />
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {!isZero && (
-                        <Tooltip text={task.locked ? 'MM 비율이 고정되어 있습니다.\n드래그·균등배분으로 변경되지 않습니다.\n클릭하여 해제' : 'MM 비율 고정\n다른 항목 조정 시 이 항목은 변경되지 않습니다'} dir="up" align="end">
-                          <button
-                            className={`lock-btn${task.locked ? ' locked' : ''}`}
-                            onClick={() => toggleLock(task.id)}
-                          >
-                            {task.locked ? '🔒 고정됨' : 'MM비중 고정'}
-                          </button>
-                        </Tooltip>
-                      )}
-                      <button className="remove-btn" onClick={() => removeTask(task.id)}>×</button>
+                        )}
+                        {!isZero && daysVal != null && editMm?.id !== task.id && (
+                          <span className="task-day-hint">≈ {daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h</span>
+                        )}
+                        <div className="task-row-spacer" />
+                        {!isZero && editMm?.id !== task.id && (
+                          <div className="task-mini-bar">
+                            <div className="task-mini-fill" style={{ width: `${pct}%`, backgroundColor: PALETTE[task.colorIdx ?? i] }} />
+                          </div>
+                        )}
+                        {!isZero && (
+                          <Tooltip text={task.locked ? 'MM 비율이 고정되어 있습니다.\n드래그·균등배분으로 변경되지 않습니다.\n클릭하여 해제' : 'MM 비율 고정\n다른 항목 조정 시 이 항목은 변경되지 않습니다'} dir="up" align="end">
+                            <button
+                              className={`lock-btn${task.locked ? ' locked' : ''}`}
+                              onClick={() => toggleLock(task.id)}
+                            >
+                              {task.locked ? '🔒 고정됨' : 'MM비중 고정'}
+                            </button>
+                          </Tooltip>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

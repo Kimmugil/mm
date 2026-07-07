@@ -452,15 +452,31 @@ body {
 
 .task-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--border-lt);
   transition: background .1s;
 }
 .task-row:last-child { border-bottom: none; }
 .task-row:hover      { background: #fafbff; }
 .task-row.zero       { opacity: 0.55; }
+
+.task-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-row-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 17px; /* color-dot(9px) + gap(8px) */
+  min-height: 24px;
+}
+
+.task-row-spacer { flex: 1; }
 
 .color-dot {
   width: 9px;
@@ -489,25 +505,17 @@ body {
   margin: -2px -8px;
 }
 
-.task-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  flex-shrink: 0;
-  gap: 2px;
-  min-width: 0;
-}
 
 .task-stats {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 5px;
   flex-shrink: 0;
-  min-width: 48px;
   cursor: text;
   border-radius: 6px;
-  padding: 2px 4px;
-  margin: -2px -4px;
+  padding: 2px 6px;
+  margin: -2px -6px;
   transition: background .12s;
 }
 .task-stats:hover { background: var(--accent-bg); }
