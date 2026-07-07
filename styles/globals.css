@@ -45,10 +45,10 @@ body {
 .page {
   max-width: 960px;
   margin: 0 auto;
-  padding: 36px 20px 80px;
+  padding: 20px 12px 40px;
 }
 @media (max-width: 720px) {
-  .page { padding: 20px 12px 60px; }
+  .page { padding: 14px 8px 40px; }
 }
 
 /* ── Tooltip ───────────────────────────────────────── */
@@ -104,7 +104,7 @@ body {
 .help-icon:hover { background: var(--accent); color: #fff; }
 
 /* ── Header ────────────────────────────────────────── */
-.header { margin-bottom: 28px; }
+.header { margin-bottom: 16px; }
 
 .header-top {
   display: flex;
@@ -240,8 +240,8 @@ body {
   box-shadow: var(--shadow);
   overflow: hidden;
   display: grid;
-  grid-template-columns: 280px 1fr;
-  max-height: calc(100vh - 220px);
+  grid-template-columns: 260px 1fr;
+  height: calc(100vh - 200px);
   min-height: 420px;
 }
 
