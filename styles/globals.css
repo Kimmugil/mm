@@ -43,7 +43,7 @@ body {
 }
 
 .page {
-  max-width: 1400px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 36px 20px 80px;
 }
@@ -232,60 +232,63 @@ body {
 .wd-pill:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
 .wd-pill strong { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 700; }
 
-/* ── Main 2-col grid ───────────────────────────────── */
-.main-grid {
-  display: grid;
-  grid-template-columns: 5fr 4fr;
-  gap: 20px;
-  align-items: start;
-}
-@media (max-width: 680px) {
-  .main-grid { grid-template-columns: 1fr; }
-}
-
-/* ── Chart panel ───────────────────────────────────── */
-.chart-panel {
+/* ── Main single card ──────────────────────────────── */
+.main-card {
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px 20px 18px;
   box-shadow: var(--shadow);
-  position: sticky;
-  top: 24px;
+  overflow: hidden;
 }
 
-.chart-toggle-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  background: var(--bg);
-  border-radius: 12px;
-  padding: 4px;
+.card-top {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  gap: 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-lt);
+  align-items: center;
 }
-.chart-tab {
-  flex: 1;
-  padding: 10px 0;
-  border: none;
-  border-radius: 9px;
-  background: transparent;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--subtle);
-  cursor: pointer;
-  font-family: inherit;
-  transition: all .18s;
+@media (max-width: 600px) {
+  .card-top { grid-template-columns: 1fr; }
+}
+
+.card-donut-wrap {
+  width: 180px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
 }
-.chart-tab-icon { font-size: 14px; }
-.chart-tab.active {
-  background: var(--surface);
-  color: var(--accent);
-  box-shadow: 0 1px 4px rgba(0,0,0,.1), 0 2px 8px rgba(99,102,241,.12);
+
+.donut-empty {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 2px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 12px;
+  color: var(--subtle);
+  line-height: 1.5;
 }
-.chart-tab:not(.active):hover { color: var(--muted); background: rgba(255,255,255,.6); }
+
+.card-top-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.card-top-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
 
 /* ── Chart hover info bar ──────────────────────────── */
 .chart-hover-bar {
@@ -320,105 +323,10 @@ body {
   border: 1px solid var(--border-lt);
 }
 
-/* ── Vertical bar ──────────────────────────────────── */
-.vbar-track {
-  height: 360px;
-  display: flex;
-  flex-direction: column;
-  border-radius: 12px;
-  overflow: visible;
-  user-select: none;
-}
-.vbar-seg {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-  transition: filter .12s;
-}
-.vbar-seg:first-child { border-radius: 12px 12px 0 0; }
-.vbar-seg:last-child  { border-radius: 0 0 12px 12px; }
-.vbar-seg:only-child  { border-radius: 12px; }
-.vbar-seg:hover { filter: brightness(1.05); }
-
-.vbar-label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 0 8px;
-  overflow: hidden;
-  pointer-events: none;
-}
-.vbar-name {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: rgba(255,255,255,.92);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  text-shadow: 0 1px 3px rgba(0,0,0,.25);
-}
-.vbar-mm {
-  font-size: 14px;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 1px 4px rgba(0,0,0,.3);
-  letter-spacing: -.3px;
-}
-.vbar-handle {
-  position: absolute;
-  bottom: -9px;
-  left: 0;
-  width: 100%;
-  height: 18px;
-  cursor: row-resize;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.vbar-grip {
-  width: 32px;
-  height: 4px;
-  background: rgba(255,255,255,.55);
-  border-radius: 3px;
-  box-shadow: 0 0 0 1.5px rgba(0,0,0,.12);
-  transition: background .15s, transform .15s, width .15s;
-}
-.vbar-handle:hover .vbar-grip  { background: #fff; transform: scaleY(1.5); width: 40px; }
-.vbar-handle:active .vbar-grip { background: #fff; transform: scaleY(2); }
-.vbar-handle--locked { cursor: default; }
-.vbar-grip-lock { font-size: 9px; opacity: 0.5; }
-
 /* ── Pie / donut ───────────────────────────────────── */
-.pie-wrap     { display: flex; flex-direction: column; align-items: center; }
-.pie-svg      { width: 100%; }
-.pie-info-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--muted);
-  margin-top: 10px;
-  min-height: 22px;
-}
-.pie-info-row strong { color: var(--text); font-weight: 700; }
-.pie-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.muted    { color: var(--subtle); }
+.pie-svg { width: 100%; display: block; }
 
 /* ── Task panel ────────────────────────────────────── */
-.task-panel { display: flex; flex-direction: column; gap: 12px; }
-
-.card {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
 
 .card-header {
   display: flex;
@@ -605,7 +513,14 @@ body {
 
 
 /* ── Footer row ────────────────────────────────────── */
-.task-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.task-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border-lt);
+}
 
 .add-btn {
   display: inline-flex;
