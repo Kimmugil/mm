@@ -485,24 +485,6 @@ export default function MMPlanner() {
               <p className="chart-guide-text">
                 경계를 드래그해 비중 조절{lockedCount > 0 ? ` · 🔒 고정 ${lockedCount}개` : ''}
               </p>
-              {(() => {
-                const ht = hoveredTaskId ? tasks.find(t => t.id === hoveredTaskId) : null;
-                if (!ht) return <div className="chart-hover-bar chart-hover-bar--empty" />;
-                const htDisp   = mmDisplay[ht.id] ?? mm(ht.weight);
-                const daysVal  = workingDays > 0 ? htDisp * workingDays : null;
-                const hoursVal = daysVal != null ? daysVal * 8 : null;
-                return (
-                  <div className="chart-hover-bar">
-                    <span className="color-dot" style={{ backgroundColor: PALETTE[ht.colorIdx] }} />
-                    <span className="chart-hover-name">{ht.name || '(이름 없음)'}</span>
-                    <div className="chart-hover-stats">
-                      <strong className="chart-hover-mm">{htDisp.toFixed(2)} MM</strong>
-                      {daysVal != null && <span className="chart-hover-days">{daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h</span>}
-                      {ht.locked && <span className="lock-badge">고정됨</span>}
-                    </div>
-                  </div>
-                );
-              })()}
               <Tooltip text={lockedCount > 0 ? `활성 미고정 항목만 균등 배분\n고정 항목(${lockedCount}개)은 유지` : '활성 항목을 동일 비율로 초기화'} dir="down" align="center">
                 <button className="equalize-btn" onClick={equalizeAll}>균등 배분</button>
               </Tooltip>
@@ -510,6 +492,22 @@ export default function MMPlanner() {
 
             {/* ── 우측 패널: 업무 목록 ── */}
             <div className="task-panel">
+              {/* 호버 배너 */}
+              {(() => {
+                const ht = hoveredTaskId ? tasks.find(t => t.id === hoveredTaskId) : null;
+                if (!ht) return <div className="hover-banner hover-banner--empty" />;
+                const htDisp   = mmDisplay[ht.id] ?? mm(ht.weight);
+                const daysVal  = workingDays > 0 ? htDisp * workingDays : null;
+                const hoursVal = daysVal != null ? daysVal * 8 : null;
+                return (
+                  <div className="hover-banner" style={{ borderLeftColor: PALETTE[ht.colorIdx] }}>
+                    <span className="hover-banner-name">{ht.name || '(이름 없음)'}</span>
+                    <strong className="hover-banner-mm">{htDisp.toFixed(2)} MM</strong>
+                    {daysVal != null && <span className="hover-banner-days">{daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h</span>}
+                    {ht.locked && <span className="lock-badge">고정됨</span>}
+                  </div>
+                );
+              })()}
               <div className="card-header">
                 <span>
                   업무 목록
