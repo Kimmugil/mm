@@ -473,8 +473,8 @@ export default function MMPlanner() {
         ) : (
           <div className="main-card">
 
-            {/* ── 상단: 도넛 + 호버 정보 + 균등배분 ── */}
-            <div className="card-top">
+            {/* ── 좌측 패널: 도넛 + 정보 ── */}
+            <div className="side-panel">
               <div className="card-donut-wrap">
                 {chartTasksPie.length === 0 ? (
                   <div className="donut-empty">업무 MM을<br />입력하세요</div>
@@ -482,43 +482,40 @@ export default function MMPlanner() {
                   <DonutChart tasks={chartTasksPie} totalWeight={activeTotal} onBoundaryDrag={handlePieDrag} onHover={setHoveredTaskId} />
                 )}
               </div>
-              <div className="card-top-info">
-                <p className="chart-guide-text">
-                  원형 차트에서 경계를 드래그해 비중을 조절할 수 있습니다.{lockedCount > 0 ? ` 🔒 고정 ${lockedCount}개` : ''}
-                </p>
-                {(() => {
-                  const ht = hoveredTaskId ? tasks.find(t => t.id === hoveredTaskId) : null;
-                  if (!ht) return <div className="chart-hover-bar chart-hover-bar--empty" />;
-                  const htDisp   = mmDisplay[ht.id] ?? mm(ht.weight);
-                  const daysVal  = workingDays > 0 ? htDisp * workingDays : null;
-                  const hoursVal = daysVal != null ? daysVal * 8 : null;
-                  return (
-                    <div className="chart-hover-bar">
-                      <span className="color-dot" style={{ backgroundColor: PALETTE[ht.colorIdx] }} />
-                      <span className="chart-hover-name">{ht.name || '(이름 없음)'}</span>
-                      <strong className="chart-hover-mm">{htDisp.toFixed(2)} MM</strong>
-                      {daysVal != null && <span className="chart-hover-days">≈ {daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h</span>}
-                      {ht.locked && <span className="lock-badge">고정됨</span>}
-                    </div>
-                  );
-                })()}
-              </div>
-              <div className="card-top-actions">
-                <Tooltip text={lockedCount > 0 ? `활성 미고정 항목만 균등 배분\n고정 항목(${lockedCount}개)은 유지` : '활성 항목을 동일 비율로 초기화'} dir="down" align="end">
-                  <button className="equalize-btn" onClick={equalizeAll}>균등 배분</button>
-                </Tooltip>
-              </div>
+              <p className="chart-guide-text">
+                경계를 드래그해 비중 조절{lockedCount > 0 ? ` · 🔒 고정 ${lockedCount}개` : ''}
+              </p>
+              {(() => {
+                const ht = hoveredTaskId ? tasks.find(t => t.id === hoveredTaskId) : null;
+                if (!ht) return <div className="chart-hover-bar chart-hover-bar--empty" />;
+                const htDisp   = mmDisplay[ht.id] ?? mm(ht.weight);
+                const daysVal  = workingDays > 0 ? htDisp * workingDays : null;
+                const hoursVal = daysVal != null ? daysVal * 8 : null;
+                return (
+                  <div className="chart-hover-bar">
+                    <span className="color-dot" style={{ backgroundColor: PALETTE[ht.colorIdx] }} />
+                    <span className="chart-hover-name">{ht.name || '(이름 없음)'}</span>
+                    <strong className="chart-hover-mm">{htDisp.toFixed(2)} MM</strong>
+                    {daysVal != null && <span className="chart-hover-days">{daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h</span>}
+                    {ht.locked && <span className="lock-badge">고정됨</span>}
+                  </div>
+                );
+              })()}
+              <Tooltip text={lockedCount > 0 ? `활성 미고정 항목만 균등 배분\n고정 항목(${lockedCount}개)은 유지` : '활성 항목을 동일 비율로 초기화'} dir="down" align="center">
+                <button className="equalize-btn" onClick={equalizeAll}>균등 배분</button>
+              </Tooltip>
             </div>
 
-            {/* ── 업무 목록 헤더 ── */}
-            <div className="card-header">
-              <span>
-                업무 목록
-                <Help text="이름 클릭해 편집 · MM 숫자 클릭해 직접 입력 · 🔒 버튼으로 비율 고정" dir="down" align="start" />
-              </span>
-            </div>
+            {/* ── 우측 패널: 업무 목록 ── */}
+            <div className="task-panel">
+              <div className="card-header">
+                <span>
+                  업무 목록
+                  <Help text="이름 클릭해 편집 · MM 숫자 클릭해 직접 입력 · 🔒 버튼으로 비율 고정" dir="down" align="start" />
+                </span>
+              </div>
 
-            {/* ── 태스크 행 ── */}
+            <div className="task-list">
             {tasks.map((task, i) => {
               const ratio    = mm(task.weight);
               const dispMM   = mmDisplay[task.id] ?? ratio;
@@ -582,11 +579,14 @@ export default function MMPlanner() {
               );
             })}
 
+            </div>{/* /task-list */}
+
             {/* ── 푸터 ── */}
             <div className="task-footer">
               <button className="add-btn" onClick={addTask}>+ 업무 추가</button>
               <div className="total-badge">합계 <strong>{tasks.length > 0 ? '1.00' : '0.00'}</strong> MM</div>
             </div>
+            </div>{/* /task-panel */}
           </div>
         )}
       </div>
