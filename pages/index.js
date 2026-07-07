@@ -304,13 +304,41 @@ export default function MMPlanner() {
     });
   }
 
-  function startEditMm(id, ratio) {
-    setEditMm({ id, val: ratio > 0 ? ratio.toFixed(2) : '' });
+  const EDIT_MODES = ['mm', 'day', 'hour'];
+  const EDIT_MODE_LABEL = { mm: 'MM', day: '일', hour: 'h' };
+
+  function startEditMm(id, ratio, mode = 'mm') {
+    const days  = workingDays > 0 ? ratio * workingDays : 0;
+    const hours = days * 8;
+    const initVal = mode === 'mm'   ? (ratio > 0 ? ratio.toFixed(2) : '')
+                  : mode === 'day'  ? (days > 0  ? days.toFixed(2)  : '')
+                  :                   (hours > 0  ? hours.toFixed(2) : '');
+    setEditMm({ id, val: initVal, mode });
+  }
+
+  function cycleEditMode() {
+    if (!editMm) return;
+    const next = EDIT_MODES[(EDIT_MODES.indexOf(editMm.mode) + 1) % EDIT_MODES.length];
+    const task = tasks.find(t => t.id === editMm.id);
+    if (!task) return;
+    const ratio = mm(task.weight);
+    const days  = workingDays > 0 ? ratio * workingDays : 0;
+    const hours = days * 8;
+    const newVal = next === 'mm'   ? (ratio > 0 ? ratio.toFixed(2) : '')
+                 : next === 'day'  ? (days > 0  ? days.toFixed(2)  : '')
+                 :                   (hours > 0  ? hours.toFixed(2) : '');
+    setEditMm({ ...editMm, val: newVal, mode: next });
   }
 
   function commitEditMm(id) {
     if (!editMm) return;
-    const v = parseFloat(editMm.val);
+    const raw = parseFloat(editMm.val);
+    let v = NaN;
+    if (!isNaN(raw) && raw >= 0) {
+      if (editMm.mode === 'mm')   v = raw;
+      else if (editMm.mode === 'day'  && workingDays > 0) v = raw / workingDays;
+      else if (editMm.mode === 'hour' && workingDays > 0) v = raw / (workingDays * 8);
+    }
     if (!isNaN(v) && v >= 0 && v < 1) {
       if (v === 0) {
         setTasks(p => p.map(t => t.id === id ? { ...t, weight: 0 } : t));
@@ -539,27 +567,36 @@ export default function MMPlanner() {
                   </div>
                   <div className="task-row-bottom">
                     {editMm?.id === task.id ? (
-                      <input
-                        type="number"
-                        className="mm-direct-input"
-                        value={editMm.val}
-                        min="0" max="0.99" step="0.01"
-                        autoFocus
-                        onChange={e => setEditMm({ id: task.id, val: e.target.value })}
-                        onBlur={() => commitEditMm(task.id)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') commitEditMm(task.id);
-                          if (e.key === 'Escape') setEditMm(null);
-                        }}
-                      />
+                      <div className="mm-edit-wrap">
+                        <input
+                          type="number"
+                          className="mm-direct-input"
+                          value={editMm.val}
+                          min="0" step="0.01"
+                          autoFocus
+                          onChange={e => setEditMm(prev => ({ ...prev, val: e.target.value }))}
+                          onBlur={() => commitEditMm(task.id)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') commitEditMm(task.id);
+                            if (e.key === 'Escape') setEditMm(null);
+                          }}
+                        />
+                        <button
+                          className="unit-toggle"
+                          onMouseDown={e => { e.preventDefault(); cycleEditMode(); }}
+                          tabIndex={-1}
+                        >{EDIT_MODE_LABEL[editMm.mode]}</button>
+                      </div>
                     ) : (
-                      <div className="task-stats" onClick={() => startEditMm(task.id, ratio)} title="클릭해서 MM 직접 입력">
+                      <div className="task-stats" onClick={() => startEditMm(task.id, ratio, 'mm')} title="클릭해서 직접 입력">
                         <span className={`task-mm${isZero ? ' zero-mm' : ''}`}>{isZero ? '0.00' : dispMM.toFixed(2)}</span>
                         {!isZero && <span className="task-pct">{pct.toFixed(1)}%</span>}
                       </div>
                     )}
                     {!isZero && daysVal != null && editMm?.id !== task.id && (
-                      <span className="task-day-hint">≈ {daysVal.toFixed(2)}일 / {hoursVal.toFixed(2)}h</span>
+                      <span className="task-day-hint" onClick={() => startEditMm(task.id, ratio, 'day')} title="클릭해서 일수 직접 입력" style={{ cursor: 'text' }}>
+                        ≈ {daysVal.toFixed(2)}일 / <span onClick={e => { e.stopPropagation(); startEditMm(task.id, ratio, 'hour'); }} title="클릭해서 시간 직접 입력">{hoursVal.toFixed(2)}h</span>
+                      </span>
                     )}
                     <div className="task-row-spacer" />
                     {!isZero && editMm?.id !== task.id && (
