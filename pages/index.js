@@ -323,6 +323,8 @@ export default function MMPlanner() {
       else if (editMm.mode === 'hour' && workingDays > 0) v = raw / (workingDays * 8);
     }
     if (!isNaN(v) && v >= 0 && v < 1) {
+      // 입력값이 0보다 크지만 표시 최소단위(0.01) 미만이면 0.01로 보정
+      if (v > 0 && v < 0.01) v = 0.01;
       if (v === 0) {
         setTasks(p => p.map(t => t.id === id ? { ...t, weight: 0 } : t));
       } else {
